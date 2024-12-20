@@ -140,7 +140,11 @@ export function EmailList({ onEmailSelect, selectedEmailId }: EmailListProps) {
                 <div className="truncate flex-1">
                   <div className="font-medium truncate">{email.address}</div>
                   <div className="text-xs text-gray-500">
-                    过期时间: {new Date(email.expiresAt).toLocaleString()}
+                    {new Date(email.expiresAt).getFullYear() === 9999 ? (
+                      "永久有效"
+                    ) : (
+                      `过期时间: ${new Date(email.expiresAt).toLocaleString()}`
+                    )}
                   </div>
                 </div>
               </div>

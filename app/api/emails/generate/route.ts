@@ -58,7 +58,9 @@ export async function POST(request: Request) {
     }
 
     const now = new Date()
-    const expires = new Date(now.getTime() + expiryTime)
+    const expires = expiryTime === 0 
+      ? new Date('9999-01-01T00:00:00.000Z')
+      : new Date(now.getTime() + expiryTime)
     
     const emailData: typeof emails.$inferInsert = {
       address,
