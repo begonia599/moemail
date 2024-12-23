@@ -9,6 +9,7 @@ import { useToast } from "@/components/ui/use-toast"
 import { nanoid } from "nanoid"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { EXPIRY_OPTIONS } from "@/types/email"
 import { EMAIL_CONFIG } from "@/config"
 
@@ -20,7 +21,8 @@ export function CreateDialog({ onEmailCreated }: CreateDialogProps) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [emailName, setEmailName] = useState("")
-  const [expiryTime, setExpiryTime] = useState(EXPIRY_OPTIONS[1].value.toString()) // Default to 24 hours
+  const [domain, setDomain] = useState(EMAIL_CONFIG.DOMAINS[0])
+  const [expiryTime, setExpiryTime] = useState(EXPIRY_OPTIONS[1].value.toString())
   const { toast } = useToast()
 
   const generateRandomName = () => setEmailName(nanoid(8))
@@ -42,29 +44,20 @@ export function CreateDialog({ onEmailCreated }: CreateDialogProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           name: emailName,
-          expiryTime: parseInt(expiryTime)  // 确保转换为数字
+          domain,
+          expiryTime: parseInt(expiryTime)
         })
       })
       
-      if (response.status === 409) {
+      if (!response.ok) {
+        const data = await response.json()
         toast({
           title: "错误",
-          description: "该邮箱名已被使用",
+          description: (data as { error: string }).error,
           variant: "destructive"
         })
         return
       }
-
-      if (response.status === 403) {
-        toast({
-          title: "错误",
-          description: "已达到最大邮箱数量限制",
-          variant: "destructive"
-        })
-        return
-      }
-      
-      if (!response.ok) throw new Error("Failed to create email")
 
       toast({
         title: "成功",
@@ -104,6 +97,18 @@ export function CreateDialog({ onEmailCreated }: CreateDialogProps) {
               placeholder="输入邮箱名"
               className="flex-1"
             />
+            {EMAIL_CONFIG.DOMAINS.length > 1 && (
+              <Select value={domain} onValueChange={setDomain}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {EMAIL_CONFIG.DOMAINS.map(d => (
+                    <SelectItem key={d} value={d}>@{d}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
             <Button
               variant="outline"
               size="icon"
@@ -133,7 +138,7 @@ export function CreateDialog({ onEmailCreated }: CreateDialogProps) {
           </div>
 
           <div className="text-sm text-gray-500">
-            完整邮箱地址将为: {emailName ? `${emailName}@${EMAIL_CONFIG.DOMAIN}` : "..."}
+            完整邮箱地址将为: {emailName ? `${emailName}@${domain}` : "..."}
           </div>
         </div>
         <div className="flex justify-end gap-2">

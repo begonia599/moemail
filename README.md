@@ -302,7 +302,7 @@ pnpx cloudflared tunnel --url http://localhost:3001
 - `AUTH_SECRET`: NextAuth Secret，用来加密 session，请设置一个随机字符串
 
 ### 邮箱配置
-- `NEXT_PUBLIC_EMAIL_DOMAIN`: 邮箱域名 (例如: moemail.app)
+- `NEXT_PUBLIC_EMAIL_DOMAIN`: 邮箱域名，支持多域名，用逗号分隔 (例如: moemail.app,bitibiti.com)
 
 ### Cloudflare 配置
 - `CLOUDFLARE_API_TOKEN`: Cloudflare API Token

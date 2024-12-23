@@ -27,32 +27,39 @@ export async function POST(request: Request) {
     
     if (Number(activeEmailsCount[0].count) >= EMAIL_CONFIG.MAX_ACTIVE_EMAILS) {
       return NextResponse.json(
-        { error: `Reached the maximum email limit (${EMAIL_CONFIG.MAX_ACTIVE_EMAILS})` },
+        { error: `已达到最大邮箱数量限制 (${EMAIL_CONFIG.MAX_ACTIVE_EMAILS})` },
         { status: 403 }
       )
     }
 
-    const { name, expiryTime } = await request.json<{ 
+    const { name, expiryTime, domain } = await request.json<{ 
       name: string
-      expiryTime: number 
+      expiryTime: number
+      domain: string
     }>()
 
-    // Validate expiry time
     if (!EXPIRY_OPTIONS.some(option => option.value === expiryTime)) {
       return NextResponse.json(
-        { error: "Invalid expiry time" },
+        { error: "无效的过期时间" },
         { status: 400 }
       )
     }
 
-    const address = `${name || nanoid(8)}@${EMAIL_CONFIG.DOMAIN}`
+    if (!EMAIL_CONFIG.DOMAINS.includes(domain)) {
+      return NextResponse.json(
+        { error: "无效的域名" },
+        { status: 400 }
+      )
+    }
+
+    const address = `${name || nanoid(8)}@${domain}`
     const existingEmail = await db.query.emails.findFirst({
       where: eq(emails.address, address)
     })
 
     if (existingEmail) {
       return NextResponse.json(
-        { error: "Email already exists" },
+        { error: "该邮箱地址已被使用" },
         { status: 409 }
       )
     }
@@ -80,7 +87,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Failed to generate email:', error)
     return NextResponse.json(
-      { error: "Failed to generate email" },
+      { error: "创建邮箱失败" },
       { status: 500 }
     )
   }
