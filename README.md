@@ -13,6 +13,9 @@
   <a href="#技术栈">技术栈</a> •
   <a href="#本地运行">本地运行</a> •
   <a href="#部署">部署</a> •
+  <a href="#Webhook 集成">Webhook 集成</a> •
+  <a href="#环境变量">环境变量</a> •
+  <a href="#Github OAuth App 配置">Github OAuth App 配置</a> •
   <a href="#贡献">贡献</a> •
   <a href="#许可证">许可证</a> •
   <a href="#交流群">交流群</a> •
@@ -161,6 +164,7 @@ pnpm deploy:cleanup
 - `CLOUDFLARE_ACCOUNT_ID`: Cloudflare 账户 ID
 - `DATABASE_NAME`: D1 数据库名称
 - `DATABASE_ID`: D1 数据库 ID
+- `NEXT_PUBLIC_EMAIL_DOMAIN`: 邮箱域名 (例如: moemail.app)
 
 2. 创建并推送新的 tag 来触发部署：
 
@@ -246,6 +250,32 @@ pnpx cloudflared tunnel --url http://localhost:3001
 ### 注意事项
 - Webhook 接口应在 10 秒内响应
 - 非 2xx 响应码会触发重试
+
+## 环境变量
+
+本项目使用以下环境变量：
+
+### 认证相关
+- `AUTH_GITHUB_ID`: GitHub OAuth App ID
+- `AUTH_GITHUB_SECRET`: GitHub OAuth App Secret
+- `AUTH_SECRET`: NextAuth Secret，用来加密 session，请设置一个随机字符串
+
+### 邮箱配置
+- `NEXT_PUBLIC_EMAIL_DOMAIN`: 邮箱域名 (例如: moemail.app)
+
+### Cloudflare 配置
+- `CLOUDFLARE_API_TOKEN`: Cloudflare API Token
+- `CLOUDFLARE_ACCOUNT_ID`: Cloudflare Account ID
+- `DATABASE_NAME`: D1 数据库名称
+- `DATABASE_ID`: D1 数据库 ID
+
+## Github OAuth App 配置
+
+- 登录 [Github Developer](https://github.com/settings/developers) 创建一个新的 OAuth App
+- 生成一个新的 `Client ID` 和 `Client Secret`
+- 设置 `Application name` 为 `<your-app-name>`
+- 设置 `Homepage URL` 为 `https://<your-domain>`
+- 设置 `Authorization callback URL` 为 `https://<your-domain>/api/auth/callback/github`
 
 
 ## 贡献
