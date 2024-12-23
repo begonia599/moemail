@@ -156,7 +156,9 @@ pnpm deploy:cleanup
 
 ### Github Actions 部署
 
-本项目可使用 GitHub Actions 实现自动化部署。当推送新的 tag 时会触发部署流程。
+本项目可使用 GitHub Actions 实现自动化部署。支持以下触发方式：
+- 在 GitHub Actions 页面手动触发部署流程
+- 推送新的 tag 时触发部署流程
 
 1. 在 GitHub 仓库设置中添加以下 Secrets：
 
