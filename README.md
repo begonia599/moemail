@@ -13,6 +13,7 @@
   <a href="#技术栈">技术栈</a> •
   <a href="#本地运行">本地运行</a> •
   <a href="#部署">部署</a> •
+  <a href="#Cloudflare 邮件路由配置">Cloudflare 邮件路由配置</a> •
   <a href="#Webhook 集成">Webhook 集成</a> •
   <a href="#环境变量">环境变量</a> •
   <a href="#Github OAuth App 配置">Github OAuth App 配置</a> •
@@ -217,6 +218,30 @@ pnpm deploy:cleanup
 - 在 Settings 中选择变量和机密
 - 添加 AUTH_GITHUB_ID, AUTH_GITHUB_SECRET, AUTH_SECRET
 
+## Cloudflare 邮件路由配置
+
+在部署完成后，需要在 Cloudflare 控制台配置邮件路由，将收到的邮件转发给 Email Worker 处理。
+
+1. 登录 [Cloudflare 控制台](https://dash.cloudflare.com/)
+2. 选择您的域名
+3. 点击左侧菜单的 "电子邮件" -> "电子邮件路由"
+4. 如果显示 “电子邮件路由当前被禁用，没有在路由电子邮件”，请点击 "启用电子邮件路由"
+![启用电子邮件路由](https://pic.otaku.ren/20241223/AQADNcQxG_K0SVd-.jpg "启用电子邮件路由")
+5. 点击后，会提示你添加电子邮件路由 DNS 记录，点击 “添加记录并启用” 即可
+![添加电子邮件路由 DNS 记录](https://pic.otaku.ren/20241223/AQADN8QxG_K0SVd-.jpg "添加电子邮件路由 DNS 记录")
+6. 配置路由规则：
+   - Catch-all 地址: 启用 "Catch-all"
+   - 编辑 Catch-all 地址
+    - 操作: 选择 "发送到 Worker"
+    - 目标位置: 选择刚刚部署的 "email-receiver-worker"
+    - 保存
+  ![配置路由规则](https://pic.otaku.ren/20241223/AQADNsQxG_K0SVd-.jpg "配置路由规则")
+
+### 注意事项
+- 确保域名的 DNS 托管在 Cloudflare
+- Email Worker 必须已经部署成功
+
+
 ## Webhook 集成
 
 当收到新邮件时，系统会向用户配置并且已启用的 Webhook URL 发送 POST 请求。
@@ -256,7 +281,7 @@ X-Webhook-Event: new_message
 pnpm webhook-test-server
 ```
 
-测试服务器会在本地启动一个 HTTP 服务器，监听 3001 端口（http://localhost:3001），并打印收到的 Webhook 消息详情。
+测试服务器会在本地启动一个 HTTP 服务器，监听 3001 端口（http://localhost:3001）, 并打印收到的 Webhook 消息详情。
 
 如果需要进行外网测试，可以通过 Cloudflare Tunnel 将服务暴露到外网：
 ```bash
@@ -317,3 +342,4 @@ pnpx cloudflared tunnel --url http://localhost:3001
 <br />
 <br />
 <a href="https://www.buymeacoffee.com/beilunyang" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png" alt="Buy Me A Coffee" style="width: 400px;" ></a>
+
