@@ -94,7 +94,7 @@ jobs:
       - name: Run database migrations
         if: |
           github.event_name == 'push' && steps.check_migrations.outputs.migrations_changed == 'true' ||
-          github.event_name == 'workflow_dispatch' && inputs.run_migrations == 'true'
+          github.event_name == 'workflow_dispatch' && github.event.inputs.run_migrations == 'true'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -141,7 +141,7 @@ jobs:
       - name: Deploy Email Worker
         if: |
           github.event_name == 'push' && steps.check_changes.outputs.email_worker_changed == 'true' ||
-          github.event_name == 'workflow_dispatch' && inputs.deploy_email_worker == 'true'
+          github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_email_worker == 'true'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -151,7 +151,7 @@ jobs:
       - name: Deploy Cleanup Worker
         if: |
           github.event_name == 'push' && steps.check_changes.outputs.cleanup_worker_changed == 'true' ||
-          github.event_name == 'workflow_dispatch' && inputs.deploy_cleanup_worker == 'true'
+          github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_cleanup_worker == 'true'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
