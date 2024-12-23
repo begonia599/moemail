@@ -157,40 +157,54 @@ pnpm deploy:cleanup
 ### Github Actions 部署
 
 本项目可使用 GitHub Actions 实现自动化部署。支持以下触发方式：
-- 在 GitHub Actions 页面手动触发部署流程
-- 推送新的 tag 时触发部署流程
+
+1. **自动触发**：推送新的 tag 时自动触发部署流程
+2. **手动触发**：在 GitHub Actions 页面手动触发，可选择以下部署选项：
+   - Run database migrations：执行数据库迁移
+   - Deploy email Worker：重新部署邮件 Worker
+   - Deploy cleanup Worker：重新部署清理 Worker
+
+#### 部署步骤
 
 1. 在 GitHub 仓库设置中添加以下 Secrets：
+   - `CLOUDFLARE_API_TOKEN`: Cloudflare API 令牌
+   - `CLOUDFLARE_ACCOUNT_ID`: Cloudflare 账户 ID
+   - `DATABASE_NAME`: D1 数据库名称
+   - `DATABASE_ID`: D1 数据库 ID
+   - `NEXT_PUBLIC_EMAIL_DOMAIN`: 邮箱域名 (例如: moemail.app)
 
-- `CLOUDFLARE_API_TOKEN`: Cloudflare API 令牌
-- `CLOUDFLARE_ACCOUNT_ID`: Cloudflare 账户 ID
-- `DATABASE_NAME`: D1 数据库名称
-- `DATABASE_ID`: D1 数据库 ID
-- `NEXT_PUBLIC_EMAIL_DOMAIN`: 邮箱域名 (例如: moemail.app)
+2. 选择触发方式：
 
-2. 创建并推送新的 tag 来触发部署：
+   **方式一：推送 tag 触发**
+   ```bash
+   # 创建新的 tag
+   git tag v1.0.0
+   
+   # 推送 tag 到远程仓库
+   git push origin v1.0.0
+   ```
 
-```bash
-# 创建新的 tag
-git tag v1.0.0
-
-# 推送 tag 到远程仓库
-git push origin v1.0.0
-```
+   **方式二：手动触发**
+   - 进入仓库的 Actions 页面
+   - 选择 "Deploy" workflow
+   - 点击 "Run workflow"
+   - 选择需要执行的部署选项
+   - 点击 "Run workflow" 开始部署
 
 3. GitHub Actions 会自动执行以下任务：
-
-- 构建并部署主应用到 Cloudflare Pages
-- 检测并部署更新的 Email Worker
-- 检测并部署更新的 Cleanup Worker
+   - 构建并部署主应用到 Cloudflare Pages
+   - 根据选项或文件变更执行数据库迁移
+   - 根据选项或文件变更部署 Email Worker
+   - 根据选项或文件变更部署 Cleanup Worker
 
 4. 部署进度可以在仓库的 Actions 标签页查看
 
-注意事项：
+#### 注意事项
 - 确保所有 Secrets 都已正确设置
-- tag 必须以 `v` 开头（例如：v1.0.0）
-- 只有推送 tag 才会触发部署，普通的 commit 不会触发
-- 如果只修改了某个 worker，只会部署该 worker
+- 使用 tag 触发时，tag 必须以 `v` 开头（例如：v1.0.0）
+- 使用 tag 触发时，只有文件发生变更的部分会被部署
+- 手动触发时，可以选择性地执行特定的部署任务
+- 每次部署都会重新部署主应用
 
 [![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/beilunyang/moemail)
 

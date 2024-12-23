@@ -5,6 +5,22 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      run_migrations:
+        description: 'Run database migrations'
+        type: boolean
+        required: true
+        default: false
+      deploy_email_worker:
+        description: 'Deploy email Worker'
+        type: boolean
+        required: true
+        default: false
+      deploy_cleanup_worker:
+        description: 'Deploy cleanup Worker'
+        type: boolean
+        required: true
+        default: false
 
 jobs:
   deploy:
@@ -16,9 +32,10 @@ jobs:
 
       - name: Get previous tag
         id: previoustag
+        if: github.event_name == 'push'
         run: |
           echo "tag=$(git describe --tags --abbrev=0 HEAD^)" >> $GITHUB_OUTPUT
-        continue-on-error: true  # Allow failure if this is the first tag
+        continue-on-error: true
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
@@ -37,12 +54,11 @@ jobs:
       # Check if database migrations have changes
       - name: Check migrations changes
         id: check_migrations
+        if: github.event_name == 'push'
         run: |
-          # If this is the first tag, we need to run migrations
           if [ -z "${{ steps.previoustag.outputs.tag }}" ]; then
             echo "migrations_changed=true" >> $GITHUB_OUTPUT
           else
-            # Check if any files in drizzle directory have changed
             if git diff ${{ steps.previoustag.outputs.tag }}..HEAD --name-only | grep -q "^drizzle/"; then
               echo "migrations_changed=true" >> $GITHUB_OUTPUT
             else
@@ -76,7 +92,9 @@ jobs:
 
       # Run database migrations if needed
       - name: Run database migrations
-        if: steps.check_migrations.outputs.migrations_changed == 'true'
+        if: |
+          github.event_name == 'push' && steps.check_migrations.outputs.migrations_changed == 'true' ||
+          github.event_name == 'workflow_dispatch' && inputs.run_migrations == 'true'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -85,8 +103,8 @@ jobs:
       # Check if workers have changes
       - name: Check workers changes
         id: check_changes
+        if: github.event_name == 'push'
         run: |
-          # If this is the first tag, check all files
           if [ -z "${{ steps.previoustag.outputs.tag }}" ]; then
             if git ls-files | grep -q "workers/email-receiver.ts"; then
               echo "email_worker_changed=true" >> $GITHUB_OUTPUT
@@ -99,7 +117,6 @@ jobs:
               echo "cleanup_worker_changed=false" >> $GITHUB_OUTPUT
             fi
           else
-            # Compare changes between two tags
             if git diff ${{ steps.previoustag.outputs.tag }}..HEAD --name-only | grep -q "workers/email-receiver.ts"; then
               echo "email_worker_changed=true" >> $GITHUB_OUTPUT
             else
@@ -120,17 +137,21 @@ jobs:
           NEXT_PUBLIC_EMAIL_DOMAIN: ${{ secrets.NEXT_PUBLIC_EMAIL_DOMAIN }}
         run: pnpm run deploy:pages
 
-      # Deploy email worker if changed
+      # Deploy email worker if changed or manually triggered
       - name: Deploy Email Worker
-        if: steps.check_changes.outputs.email_worker_changed == 'true'
+        if: |
+          github.event_name == 'push' && steps.check_changes.outputs.email_worker_changed == 'true' ||
+          github.event_name == 'workflow_dispatch' && inputs.deploy_email_worker == 'true'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: pnpm run deploy:email
 
-      # Deploy cleanup worker if changed
+      # Deploy cleanup worker if changed or manually triggered
       - name: Deploy Cleanup Worker
-        if: steps.check_changes.outputs.cleanup_worker_changed == 'true'
+        if: |
+          github.event_name == 'push' && steps.check_changes.outputs.cleanup_worker_changed == 'true' ||
+          github.event_name == 'workflow_dispatch' && inputs.deploy_cleanup_worker == 'true'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
