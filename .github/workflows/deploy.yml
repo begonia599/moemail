@@ -106,22 +106,26 @@ jobs:
         if: github.event_name == 'push'
         run: |
           if [ -z "${{ steps.previoustag.outputs.tag }}" ]; then
-            if git ls-files | grep -q "workers/email-receiver.ts"; then
+            # Check email worker and its dependencies
+            if git ls-files | grep -q -E "workers/email-receiver.ts|app/lib/schema.ts|app/lib/webhook.ts|app/config/webhook.ts"; then
               echo "email_worker_changed=true" >> $GITHUB_OUTPUT
             else
               echo "email_worker_changed=false" >> $GITHUB_OUTPUT
             fi
+            # Check cleanup worker
             if git ls-files | grep -q "workers/cleanup.ts"; then
               echo "cleanup_worker_changed=true" >> $GITHUB_OUTPUT
             else
               echo "cleanup_worker_changed=false" >> $GITHUB_OUTPUT
             fi
           else
-            if git diff ${{ steps.previoustag.outputs.tag }}..HEAD --name-only | grep -q "workers/email-receiver.ts"; then
+            # Check email worker and its dependencies changes
+            if git diff ${{ steps.previoustag.outputs.tag }}..HEAD --name-only | grep -q -E "workers/email-receiver.ts|app/lib/schema.ts|app/lib/webhook.ts|app/config/webhook.ts"; then
               echo "email_worker_changed=true" >> $GITHUB_OUTPUT
             else
               echo "email_worker_changed=false" >> $GITHUB_OUTPUT
             fi
+            # Check cleanup worker changes
             if git diff ${{ steps.previoustag.outputs.tag }}..HEAD --name-only | grep -q "workers/cleanup.ts"; then
               echo "cleanup_worker_changed=true" >> $GITHUB_OUTPUT
             else
