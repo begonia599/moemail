@@ -328,7 +328,7 @@ pnpx cloudflared tunnel --url http://localhost:3001
 本项目采用 [MIT](LICENSE) 许可证
 
 ## 交流群
-<img src="https://pic.otaku.ren/20241215/AQADXcMxGyDw-FZ-.jpg" style="width: 400px;"/>
+<img src="https://pic.otaku.ren/20241224/AQADoMExG_K0WVd-.jpg" style="width: 400px;"/>
 <br />
 如二维码失效，请添加我的个人微信（hansenones），并备注 “MoeMail” 加入微信交流群
 
