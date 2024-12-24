@@ -9,15 +9,16 @@ export const runtime = "edge"
 
 export async function DELETE(
   _request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const db = createDb()
   const session = await auth()
 
   try {
+    const db = createDb()
+    const { id } = await params
     const email = await db.query.emails.findFirst({
       where: and(
-        eq(emails.id, params.id),
+        eq(emails.id, id),
         eq(emails.userId, session!.user!.id!)
       )
     })
@@ -29,10 +30,10 @@ export async function DELETE(
       )
     }
     await db.delete(messages)
-      .where(eq(messages.emailId, params.id))
+      .where(eq(messages.emailId, id))
 
     await db.delete(emails)
-      .where(eq(emails.id, params.id))
+      .where(eq(emails.id, id))
 
     return NextResponse.json({ success: true })
   } catch (error) {
