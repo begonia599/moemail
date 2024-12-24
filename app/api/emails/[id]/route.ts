@@ -1,10 +1,48 @@
 import { NextResponse } from "next/server"
+import { auth } from "@/lib/auth"
 import { createDb } from "@/lib/db"
-import { messages } from "@/lib/schema"
-import { and, eq, lt, or, sql } from "drizzle-orm"
+import { emails, messages } from "@/lib/schema"
+import { eq, and, lt, or, sql } from "drizzle-orm"
 import { encodeCursor, decodeCursor } from "@/lib/cursor"
 
 export const runtime = "edge"
+
+export async function DELETE(
+  _request: Request,
+  { params }: { params: { id: string } }
+) {
+  const db = createDb()
+  const session = await auth()
+
+  try {
+    const email = await db.query.emails.findFirst({
+      where: and(
+        eq(emails.id, params.id),
+        eq(emails.userId, session!.user!.id!)
+      )
+    })
+
+    if (!email) {
+      return NextResponse.json(
+        { error: "邮箱不存在或无权限删除" },
+        { status: 403 }
+      )
+    }
+    await db.delete(messages)
+      .where(eq(messages.emailId, params.id))
+
+    await db.delete(emails)
+      .where(eq(emails.id, params.id))
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Failed to delete email:', error)
+    return NextResponse.json(
+      { error: "删除邮箱失败" },
+      { status: 500 }
+    )
+  }
+} 
 
 const PAGE_SIZE = 20
 

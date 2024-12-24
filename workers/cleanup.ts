@@ -4,7 +4,7 @@ interface Env {
 
 const CLEANUP_CONFIG = {
   // Whether to delete expired emails
-  DELETE_EXPIRED_EMAILS: false,
+  DELETE_EXPIRED_EMAILS: true,
   
   // Whether to delete messages from expired emails if not deleting the emails themselves
   DELETE_MESSAGES_FROM_EXPIRED: true,
