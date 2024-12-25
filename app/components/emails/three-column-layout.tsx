@@ -5,6 +5,8 @@ import { EmailList } from "./email-list"
 import { MessageList } from "./message-list"
 import { MessageView } from "./message-view"
 import { cn } from "@/lib/utils"
+import { useCopy } from "@/hooks/use-copy"
+import { Copy } from "lucide-react"
 
 interface Email {
   id: string
@@ -14,10 +16,11 @@ interface Email {
 export function ThreeColumnLayout() {
   const [selectedEmail, setSelectedEmail] = useState<Email | null>(null)
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null)
+  const { copyToClipboard } = useCopy()
 
   const columnClass = "border-2 border-primary/20 bg-background rounded-lg overflow-hidden flex flex-col"
   const headerClass = "p-2 border-b-2 border-primary/20 flex items-center justify-between shrink-0"
-  const titleClass = "text-sm font-bold px-2"
+  const titleClass = "text-sm font-bold px-2 w-full overflow-hidden"
 
   // 移动端视图逻辑
   const getMobileView = () => {
@@ -28,6 +31,10 @@ export function ThreeColumnLayout() {
 
   const mobileView = getMobileView()
 
+  const copyEmailAddress = () => {
+    copyToClipboard(selectedEmail?.address || "")
+  }
+
   return (
     <div className="pb-5 pt-20 h-full flex flex-col">
       {/* 桌面端三栏布局 */}
@@ -37,7 +44,7 @@ export function ThreeColumnLayout() {
             <h2 className={titleClass}>我的邮箱</h2>
           </div>
           <div className="flex-1 overflow-auto">
-            <EmailList 
+            <EmailList
               onEmailSelect={setSelectedEmail}
               selectedEmailId={selectedEmail?.id}
             />
@@ -48,7 +55,12 @@ export function ThreeColumnLayout() {
           <div className={headerClass}>
             <h2 className={titleClass}>
               {selectedEmail ? (
-                <span className="truncate block">{selectedEmail.address}</span>
+                <div className="w-full flex items-center gap-2">
+                  <span className="truncate min-w-0">{selectedEmail.address}</span>
+                  <div className="shrink-0 cursor-pointer text-primary" onClick={copyEmailAddress}>
+                    <Copy className="size-4" />
+                  </div>
+                </div>
               ) : (
                 "选择邮箱查看消息"
               )}
@@ -92,7 +104,7 @@ export function ThreeColumnLayout() {
                 <h2 className={titleClass}>我的邮箱</h2>
               </div>
               <div className="flex-1 overflow-auto">
-                <EmailList 
+                <EmailList
                   onEmailSelect={(email) => {
                     setSelectedEmail(email)
                   }}
@@ -101,21 +113,24 @@ export function ThreeColumnLayout() {
               </div>
             </>
           )}
-          
+
           {mobileView === "emails" && selectedEmail && (
             <div className="h-full flex flex-col">
-              <div className={headerClass}>
+              <div className={cn(headerClass, "gap-2")}>
                 <button
                   onClick={() => {
                     setSelectedEmail(null)
                   }}
-                  className="text-sm text-primary"
+                  className="text-sm text-primary shrink-0"
                 >
                   ← 返回邮箱列表
                 </button>
-                <span className="text-sm font-medium truncate">
-                  {selectedEmail.address}
-                </span>
+                <div className="flex-1 flex items-center gap-2 min-w-0">
+                  <span className="truncate min-w-0 flex-1 text-right">{selectedEmail.address}</span>
+                  <div className="shrink-0 cursor-pointer text-primary" onClick={copyEmailAddress}>
+                    <Copy className="size-4" />
+                  </div>
+                </div>
               </div>
               <div className="flex-1 overflow-auto">
                 <MessageList
@@ -126,7 +141,7 @@ export function ThreeColumnLayout() {
               </div>
             </div>
           )}
-          
+
           {mobileView === "message" && selectedEmail && selectedMessageId && (
             <div className="h-full flex flex-col">
               <div className={headerClass}>
