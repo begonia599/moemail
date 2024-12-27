@@ -6,6 +6,7 @@ import { emails } from "@/lib/schema"
 import { eq, and, gt, sql } from "drizzle-orm"
 import { EXPIRY_OPTIONS } from "@/types/email"
 import { EMAIL_CONFIG } from "@/config"
+import { getRequestContext } from "@cloudflare/next-on-pages"
 
 export const runtime = "edge"
 
@@ -14,7 +15,6 @@ export async function POST(request: Request) {
   const session = await auth()
 
   try {
-    // Check current number of active emails for user
     const activeEmailsCount = await db
       .select({ count: sql<number>`count(*)` })
       .from(emails)
@@ -45,7 +45,10 @@ export async function POST(request: Request) {
       )
     }
 
-    if (!EMAIL_CONFIG.DOMAINS.includes(domain)) {
+    const domainString = await getRequestContext().env.SITE_CONFIG.get("EMAIL_DOMAINS")
+    const domains = domainString ? domainString.split(',') : ["moemail.app"]
+
+    if (!domains || !domains.includes(domain)) {
       return NextResponse.json(
         { error: "无效的域名" },
         { status: 400 }

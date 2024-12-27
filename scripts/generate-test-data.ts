@@ -1,13 +1,11 @@
 import { drizzle } from 'drizzle-orm/d1'
 import { emails, messages } from '../app/lib/schema'
 import { nanoid } from 'nanoid'
-import { EMAIL_CONFIG} from '../app/config'
 
 const TEST_USER_ID = '4e4c1d5d-a3c9-407a-8808-2a2424b38c62'
 
 interface Env {
   DB: D1Database
-  NEXT_PUBLIC_EMAIL_DOMAIN: string
 }
 
 const MAX_EMAIL_COUNT = 5
@@ -22,7 +20,7 @@ async function generateTestData(env: Env) {
     // 生成测试邮箱
     const testEmails = Array.from({ length: MAX_EMAIL_COUNT }).map(() => ({
       id: crypto.randomUUID(),
-      address: `${nanoid(6)}@${EMAIL_CONFIG.DOMAINS[0]}`,
+      address: `${nanoid(6)}@moemail.app`,
       userId: TEST_USER_ID,
       createdAt: now,
       expiresAt: new Date(now.getTime() + 24 * 60 * 60 * 1000),

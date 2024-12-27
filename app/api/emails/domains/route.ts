@@ -1,20 +1,13 @@
-import { EMAIL_CONFIG } from "@/config"
+import { getRequestContext } from "@cloudflare/next-on-pages"
 import { NextResponse } from "next/server"
 
 export const runtime = "edge"
 
 export async function GET() {
   try {
-    const domains = EMAIL_CONFIG.DOMAINS
+    const domainString = await getRequestContext().env.SITE_CONFIG.get("EMAIL_DOMAINS")
 
-    if (domains.length === 0) {
-      return NextResponse.json(
-        { error: "无效的域名列表" },
-        { status: 400 }
-      )
-    }
-
-    return NextResponse.json({ domains })
+    return NextResponse.json({ domains: domainString ? domainString.split(',') : ["moemail.app"] })
   } catch (error) {
     console.error('Failed to fetch domains:', error)
     return NextResponse.json(

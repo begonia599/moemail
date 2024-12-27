@@ -17,10 +17,6 @@ interface CreateDialogProps {
   onEmailCreated: () => void
 }
 
-interface DomainResponse {
-  domains: string[]
-}
-
 export function CreateDialog({ onEmailCreated }: CreateDialogProps) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -89,7 +85,7 @@ export function CreateDialog({ onEmailCreated }: CreateDialogProps) {
 
   const fetchDomains = async () => {
     const response = await fetch("/api/emails/domains");
-    const data = (await response.json()) as DomainResponse;
+    const data = (await response.json()) as { domains: string[] };
     setDomains(data.domains || []);
     setCurrentDomain(data.domains[0] || "");
   };

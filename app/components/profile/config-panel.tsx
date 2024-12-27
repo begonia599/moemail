@@ -5,6 +5,7 @@ import { Settings } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import { useState, useEffect } from "react"
 import { Role, ROLES } from "@/lib/permissions"
+import { Input } from "@/components/ui/input"
 import {
   Select,
   SelectContent,
@@ -15,6 +16,7 @@ import {
 
 export function ConfigPanel() {
   const [defaultRole, setDefaultRole] = useState<string>("")
+  const [emailDomains, setEmailDomains] = useState<string>("")
   const [loading, setLoading] = useState(false)
   const { toast } = useToast()
 
@@ -25,8 +27,12 @@ export function ConfigPanel() {
   const fetchConfig = async () => {
     const res = await fetch("/api/config")
     if (res.ok) {
-      const data = await res.json() as { defaultRole: Exclude<Role, typeof ROLES.EMPEROR> }
+      const data = await res.json() as { 
+        defaultRole: Exclude<Role, typeof ROLES.EMPEROR>,
+        emailDomains: string
+      }
       setDefaultRole(data.defaultRole)
+      setEmailDomains(data.emailDomains)
     }
   }
 
@@ -36,14 +42,14 @@ export function ConfigPanel() {
       const res = await fetch("/api/config", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ defaultRole }),
+        body: JSON.stringify({ defaultRole, emailDomains }),
       })
 
       if (!res.ok) throw new Error("保存失败")
 
       toast({
         title: "保存成功",
-        description: "默认角色设置已更新",
+        description: "网站设置已更新",
       })
     } catch (error) {
       toast({
@@ -75,13 +81,26 @@ export function ConfigPanel() {
               <SelectItem value={ROLES.CIVILIAN}>平民</SelectItem>
             </SelectContent>
           </Select>
-          <Button 
-            onClick={handleSave}
-            disabled={loading}
-          >
-            保存
-          </Button>
         </div>
+
+        <div className="flex items-center gap-4">
+          <span className="text-sm">邮箱域名:</span>
+          <div className="flex-1">
+            <Input 
+              value={emailDomains}
+              onChange={(e) => setEmailDomains(e.target.value)}
+              placeholder="多个域名用逗号分隔，如: moemail.app,bitibiti.com"
+            />
+          </div>
+        </div>
+
+        <Button 
+          onClick={handleSave}
+          disabled={loading}
+          className="w-full"
+        >
+          保存
+        </Button>
       </div>
     </div>
   )

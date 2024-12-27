@@ -13,7 +13,7 @@
   <a href="#技术栈">技术栈</a> •
   <a href="#本地运行">本地运行</a> •
   <a href="#部署">部署</a> •
-  <a href="#Cloudflare 邮件路由配置">Cloudflare 邮件路由配置</a> •
+  <a href="#邮箱域名配置">邮箱域名配置</a> •
   <a href="#权限系统">权限系统</a> •
   <a href="#Webhook 集成">Webhook 集成</a> •
   <a href="#环境变量">环境变量</a> •
@@ -221,9 +221,15 @@ pnpm deploy:cleanup
 - 在 Settings 中选择变量和机密
 - 添加 AUTH_GITHUB_ID, AUTH_GITHUB_SECRET, AUTH_SECRET
 
-## Cloudflare 邮件路由配置
 
-在部署完成后，需要在 Cloudflare 控制台配置邮件路由，将收到的邮件转发给 Email Worker 处理。
+## 邮箱域名配置
+
+在 MoeMail 个人中心页面，可以配置网站的邮箱域名，支持多域名配置，多个域名用逗号分隔
+![邮箱域名配置](https://pic.otaku.ren/20241227/AQAD88AxG67zeVd-.jpg "邮箱域名配置")
+
+### Cloudflare 邮件路由配置
+
+为了使邮箱域名生效，还需要在 Cloudflare 控制台配置邮件路由，将收到的邮件转发给 Email Worker 处理。
 
 1. 登录 [Cloudflare 控制台](https://dash.cloudflare.com/)
 2. 选择您的域名
@@ -344,14 +350,12 @@ pnpx cloudflared tunnel --url http://localhost:3001
 - `AUTH_GITHUB_SECRET`: GitHub OAuth App Secret
 - `AUTH_SECRET`: NextAuth Secret，用来加密 session，请设置一个随机字符串
 
-### 邮箱配置
-- `NEXT_PUBLIC_EMAIL_DOMAIN`: 邮箱域名，支持多域名，用逗号分隔 (例如: moemail.app,bitibiti.com)
-
 ### Cloudflare 配置
 - `CLOUDFLARE_API_TOKEN`: Cloudflare API Token
 - `CLOUDFLARE_ACCOUNT_ID`: Cloudflare Account ID
 - `DATABASE_NAME`: D1 数据库名称
 - `DATABASE_ID`: D1 数据库 ID
+- `KV_NAMESPACE_ID`: Cloudflare KV namespace ID，用于存储网站配置
 
 ## Github OAuth App 配置
 
