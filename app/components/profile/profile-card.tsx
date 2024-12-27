@@ -4,20 +4,31 @@ import { User } from "next-auth"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { signOut } from "next-auth/react"
-import { Github, Mail, Settings } from "lucide-react"
+import { Github, Mail, Settings, Crown, Sword, User2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { WebhookConfig } from "./webhook-config"
+import { PromotePanel } from "./promote-panel"
+import { useRolePermission } from "@/hooks/use-role-permission"
+import { PERMISSIONS } from "@/lib/permissions"
 
 interface ProfileCardProps {
   user: User
 }
 
+const roleConfigs = {
+  emperor: { name: '皇帝', icon: Crown },
+  knight: { name: '骑士', icon: Sword },
+  civilian: { name: '平民', icon: User2 },
+} as const
+
 export function ProfileCard({ user }: ProfileCardProps) {
   const router = useRouter()
+  const { checkPermission } = useRolePermission()
+  const canManageWebhook = checkPermission(PERMISSIONS.MANAGE_WEBHOOK)
+  const canPromote = checkPermission(PERMISSIONS.PROMOTE_USER)
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      {/* 用户信息卡片 */}
       <div className="bg-background rounded-lg border-2 border-primary/20 p-6">
         <div className="flex items-center gap-6">
           <div className="relative">
@@ -42,20 +53,40 @@ export function ProfileCard({ user }: ProfileCardProps) {
             <p className="text-sm text-muted-foreground truncate mt-1">
               {user.email}
             </p>
+            {user.roles && (
+              <div className="flex gap-2 mt-2">
+                {user.roles.map(({ name }) => {
+                  const roleConfig = roleConfigs[name as keyof typeof roleConfigs]
+                  const Icon = roleConfig.icon
+                  return (
+                    <div 
+                      key={name}
+                      className="flex items-center gap-1 text-xs bg-primary/10 text-primary px-2 py-0.5 rounded"
+                      title={roleConfig.name}
+                    >
+                      <Icon className="w-3 h-3" />
+                      {roleConfig.name}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Webhook 配置卡片 */}
-      <div className="bg-background rounded-lg border-2 border-primary/20 p-6">
-        <div className="flex items-center gap-2 mb-6">
-          <Settings className="w-5 h-5 text-primary" />
-          <h2 className="text-lg font-semibold">Webhook 配置</h2>
+      {canManageWebhook && (
+        <div className="bg-background rounded-lg border-2 border-primary/20 p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <Settings className="w-5 h-5 text-primary" />
+            <h2 className="text-lg font-semibold">Webhook 配置</h2>
+          </div>
+          <WebhookConfig />
         </div>
-        <WebhookConfig />
-      </div>
+      )}
 
-      {/* 操作按钮 */}
+      {canPromote && <PromotePanel />}
+
       <div className="flex flex-col sm:flex-row gap-4 px-1">
         <Button 
           onClick={() => router.push("/moe")}

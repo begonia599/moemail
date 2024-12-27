@@ -1,6 +1,7 @@
 import { integer, sqliteTable, text, primaryKey } from "drizzle-orm/sqlite-core"
 import type { AdapterAccountType } from "next-auth/adapters"
- 
+import { relations } from 'drizzle-orm';
+
 // https://authjs.dev/getting-started/adapters/drizzle
 export const users = sqliteTable("user", {
   id: text("id")
@@ -82,3 +83,34 @@ export const webhooks = sqliteTable('webhook', {
     .notNull()
     .$defaultFn(() => new Date()),
 })
+
+export const roles = sqliteTable("role", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  name: text("name").notNull(),
+  description: text("description"),
+  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+});
+
+export const rolesRelations = relations(roles, ({ many }) => ({
+  userRoles: many(userRoles),
+}));
+
+export const userRoles = sqliteTable("user_role", {
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  roleId: text("role_id").notNull().references(() => roles.id, { onDelete: "cascade" }),
+  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.userId, table.roleId] }),
+}));
+
+export const userRolesRelations = relations(userRoles, ({ one }) => ({
+  user: one(users, {
+    fields: [userRoles.userId],
+    references: [users.id],
+  }),
+  role: one(roles, {
+    fields: [userRoles.roleId],
+    references: [roles.id],
+  }),
+})); 

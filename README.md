@@ -14,6 +14,7 @@
   <a href="#本地运行">本地运行</a> •
   <a href="#部署">部署</a> •
   <a href="#Cloudflare 邮件路由配置">Cloudflare 邮件路由配置</a> •
+  <a href="#权限系统">权限系统</a> •
   <a href="#Webhook 集成">Webhook 集成</a> •
   <a href="#环境变量">环境变量</a> •
   <a href="#Github OAuth App 配置">Github OAuth App 配置</a> •
@@ -31,7 +32,7 @@
 
 ![邮箱](https://pic.otaku.ren/20241209/AQADw8UxG9k1uVZ-.jpg "邮箱")
 
-![个人中心](https://pic.otaku.ren/20241217/AQAD9sQxG0g1EVd-.jpg "个人中心")
+![个人中心](https://pic.otaku.ren/20241227/AQADVsIxG7OzcFd-.jpg "个人中心")
 
 ## 特性
 
@@ -45,6 +46,7 @@
 - 💸 **免费自部署**：基于 Cloudflare 构建, 可实现免费自部署，无需任何费用
 - 🎉 **可爱的 UI**：简洁可爱萌萌哒 UI 界面
 - 🔔 **Webhook 通知**：支持通过 webhook 接收新邮件通知
+- 🛡️ **权限系统**：支持基于角色的权限控制系统
 
 ## 技术栈
 
@@ -63,7 +65,7 @@
 ### 前置要求
 
 - Node.js 18+
-- pnpm
+- Pnpm
 - Wrangler CLI
 - Cloudflare 账号
 
@@ -241,6 +243,45 @@ pnpm deploy:cleanup
 - 确保域名的 DNS 托管在 Cloudflare
 - Email Worker 必须已经部署成功
 
+## 权限系统
+
+本项目采用基于角色的权限控制系统（RBAC）。
+
+### 角色等级
+
+系统包含三个角色等级：
+
+1. **皇帝（Emperor）**
+   - 网站所有者
+   - 拥有所有权限
+   - 每个站点仅允许一位皇帝
+
+2. **骑士（Knight）**
+   - 高级用户
+   - 可以使用临时邮箱功能
+   - 可以配置 Webhook
+   - 开放注册时默认角色
+
+3. **平民（Civilian）**
+   - 普通用户
+   - 无任何权限
+   - 非开放注册时默认角色
+
+### 权限配置
+
+通过环境变量 `OPEN_REGISTRATION` 控制注册策略：
+- `true`: 新用户默认为骑士
+- `false`: 新用户默认为平民
+
+### 角色升级
+
+1. **成为皇帝**
+   - 第一个访问 `/api/roles/init-emperor` 接口的用户将成为皇帝
+   - 站点已有皇帝后，无法再提升其他用户为皇帝
+
+2. **成为骑士**
+   - 皇帝在个人中心页面对平民进行册封
+
 
 ## Webhook 集成
 
@@ -301,6 +342,9 @@ pnpx cloudflared tunnel --url http://localhost:3001
 - `AUTH_GITHUB_SECRET`: GitHub OAuth App Secret
 - `AUTH_SECRET`: NextAuth Secret，用来加密 session，请设置一个随机字符串
 
+### 权限相关
+- `OPEN_REGISTRATION`: 是否开放注册，`true` 表示开放注册，`false` 表示关闭注册
+
 ### 邮箱配置
 - `NEXT_PUBLIC_EMAIL_DOMAIN`: 邮箱域名，支持多域名，用逗号分隔 (例如: moemail.app,bitibiti.com)
 
@@ -335,7 +379,7 @@ pnpx cloudflared tunnel --url http://localhost:3001
 ## 支持
 
 如果你喜欢这个项目，欢迎给它一个 Star ⭐️
-或者进行赞助
+或者进���赞助
 <br />
 <br />
 <img src="https://pic.otaku.ren/20240212/AQADPrgxGwoIWFZ-.jpg" style="width: 400px;"/>

@@ -90,8 +90,8 @@ export function CreateDialog({ onEmailCreated }: CreateDialogProps) {
   const fetchDomains = async () => {
     const response = await fetch("/api/emails/domains");
     const data = (await response.json()) as DomainResponse;
-    setDomains(data.domains);
-    setCurrentDomain(data.domains[0]);
+    setDomains(data.domains || []);
+    setCurrentDomain(data.domains[0] || "");
   };
 
   useEffect(() => {
