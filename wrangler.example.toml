@@ -8,3 +8,7 @@ binding = "DB"
 migrations_dir = "drizzle"
 database_name = ""
 database_id = ""
+
+[[kv_namespaces]]
+binding = "SITE_CONFIG"
+id = ""

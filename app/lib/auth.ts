@@ -4,6 +4,7 @@ import { DrizzleAdapter } from "@auth/drizzle-adapter"
 import { createDb, Db } from "./db"
 import { accounts, sessions, users, roles, userRoles } from "./schema"
 import { eq } from "drizzle-orm"
+import { getRequestContext } from "@cloudflare/next-on-pages"
 import { Permission, hasPermission, ROLES, Role } from "./permissions"
 
 const ROLE_DESCRIPTIONS: Record<Role, string> = {
@@ -12,8 +13,10 @@ const ROLE_DESCRIPTIONS: Record<Role, string> = {
   [ROLES.CIVILIAN]: "平民（普通用户）",
 }
 
-const getDefaultRole = (): Role =>
-  process.env.OPEN_REGISTRATION === 'true' ? ROLES.KNIGHT : ROLES.CIVILIAN
+const getDefaultRole = async (): Promise<Role> => {
+  const defaultRole = await getRequestContext().env.SITE_CONFIG.get("DEFAULT_ROLE")
+  return defaultRole === ROLES.KNIGHT ? ROLES.KNIGHT : ROLES.CIVILIAN
+}
 
 async function findOrCreateRole(db: Db, roleName: Role) {
   let role = await db.query.roles.findFirst({
@@ -85,8 +88,9 @@ export const {
 
         if (existingRole) return
 
-        const defaultRole = await findOrCreateRole(db, getDefaultRole())
-        await assignRoleToUser(db, user.id, defaultRole.id)
+        const defaultRole = await getDefaultRole()
+        const role = await findOrCreateRole(db, defaultRole)
+        await assignRoleToUser(db, user.id, role.id)
       } catch (error) {
         console.error('Error assigning role:', error)
       }
@@ -107,13 +111,14 @@ export const {
       })
 
       if (!userRoleRecords.length) {
-        const defaultRole = await findOrCreateRole(db, getDefaultRole())
-        await assignRoleToUser(db, user.id, defaultRole.id)
+        const defaultRole = await getDefaultRole()
+        const role = await findOrCreateRole(db, defaultRole)
+        await assignRoleToUser(db, user.id, role.id)
         userRoleRecords = [{
           userId: user.id,
-          roleId: defaultRole.id,
+          roleId: role.id,
           createdAt: new Date(),
-          role: defaultRole
+          role: role
         }]
       }
 

@@ -10,6 +10,7 @@ import { WebhookConfig } from "./webhook-config"
 import { PromotePanel } from "./promote-panel"
 import { useRolePermission } from "@/hooks/use-role-permission"
 import { PERMISSIONS } from "@/lib/permissions"
+import { ConfigPanel } from "./config-panel"
 
 interface ProfileCardProps {
   user: User
@@ -26,6 +27,7 @@ export function ProfileCard({ user }: ProfileCardProps) {
   const { checkPermission } = useRolePermission()
   const canManageWebhook = checkPermission(PERMISSIONS.MANAGE_WEBHOOK)
   const canPromote = checkPermission(PERMISSIONS.PROMOTE_USER)
+  const canManageConfig = checkPermission(PERMISSIONS.MANAGE_CONFIG)
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -85,6 +87,7 @@ export function ProfileCard({ user }: ProfileCardProps) {
         </div>
       )}
 
+      {canManageConfig && <ConfigPanel />}
       {canPromote && <PromotePanel />}
 
       <div className="flex flex-col sm:flex-row gap-4 px-1">

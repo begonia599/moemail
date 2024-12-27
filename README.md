@@ -175,6 +175,7 @@ pnpm deploy:cleanup
    - `DATABASE_NAME`: D1 数据库名称
    - `DATABASE_ID`: D1 数据库 ID
    - `NEXT_PUBLIC_EMAIL_DOMAIN`: 邮箱域名 (例如: moemail.app)
+   - `KV_NAMESPACE_ID`: Cloudflare KV namespace ID，用于存储网站配置
 
 2. 选择触发方式：
 
@@ -247,6 +248,12 @@ pnpm deploy:cleanup
 
 本项目采用基于角色的权限控制系统（RBAC）。
 
+### 权限配置
+
+新用户默认角色由皇帝在个人中心的网站设置中配置：
+- 骑士：新用户将获得临时邮箱和 Webhook 配置权限
+- 平民：新用户无任何权限，需要等待皇帝册封为骑士
+
 ### 角色等级
 
 系统包含三个角色等级：
@@ -254,33 +261,28 @@ pnpm deploy:cleanup
 1. **皇帝（Emperor）**
    - 网站所有者
    - 拥有所有权限
+   - 可以配置新用户默认角色
+   - 可以册封骑士
    - 每个站点仅允许一位皇帝
 
 2. **骑士（Knight）**
    - 高级用户
    - 可以使用临时邮箱功能
    - 可以配置 Webhook
-   - 开放注册时默认角色
 
 3. **平民（Civilian）**
    - 普通用户
    - 无任何权限
-   - 非开放注册时默认角色
-
-### 权限配置
-
-通过环境变量 `OPEN_REGISTRATION` 控制注册策略：
-- `true`: 新用户默认为骑士
-- `false`: 新用户默认为平民
 
 ### 角色升级
 
 1. **成为皇帝**
-   - 第一个访问 `/api/roles/init-emperor` 接口的用户将成为皇帝
+   - 第一个访问 `/api/roles/init-emperor` 接口的用户将成为皇帝，即网站所有者
    - 站点已有皇帝后，无法再提升其他用户为皇帝
 
 2. **成为骑士**
    - 皇帝在个人中心页面对平民进行册封
+   - 或由皇帝设置新用户默认为骑士角色
 
 
 ## Webhook 集成
@@ -341,9 +343,6 @@ pnpx cloudflared tunnel --url http://localhost:3001
 - `AUTH_GITHUB_ID`: GitHub OAuth App ID
 - `AUTH_GITHUB_SECRET`: GitHub OAuth App Secret
 - `AUTH_SECRET`: NextAuth Secret，用来加密 session，请设置一个随机字符串
-
-### 权限相关
-- `OPEN_REGISTRATION`: 是否开放注册，`true` 表示开放注册，`false` 表示关闭注册
 
 ### 邮箱配置
 - `NEXT_PUBLIC_EMAIL_DOMAIN`: 邮箱域名，支持多域名，用逗号分隔 (例如: moemail.app,bitibiti.com)

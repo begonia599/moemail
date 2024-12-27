@@ -8,6 +8,7 @@ const API_PERMISSIONS: Record<string, Permission> = {
   '/api/emails': PERMISSIONS.MANAGE_EMAIL,
   '/api/webhook': PERMISSIONS.MANAGE_WEBHOOK,
   '/api/roles/promote': PERMISSIONS.PROMOTE_USER,
+  '/api/config': PERMISSIONS.MANAGE_CONFIG,
 }
 
 export async function middleware(request: Request) {
@@ -43,5 +44,6 @@ export const config = {
     '/api/emails/:path*',
     '/api/webhook/:path*',
     '/api/roles/:path*',
+    '/api/config/:path*',
   ]
 } 

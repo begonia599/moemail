@@ -10,6 +10,7 @@ export const PERMISSIONS = {
   MANAGE_EMAIL: 'manage_email',
   MANAGE_WEBHOOK: 'manage_webhook',
   PROMOTE_USER: 'promote_user',
+  MANAGE_CONFIG: 'manage_config',
 } as const;
 
 export type Permission = typeof PERMISSIONS[keyof typeof PERMISSIONS];
