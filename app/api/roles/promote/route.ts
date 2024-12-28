@@ -17,12 +17,26 @@ export async function POST(request: Request) {
 
     if (roleName !== ROLES.KNIGHT) {
       return Response.json(
-        { error: "角色不合法" },
+        { error: "只能册封骑士" },
         { status: 400 }
       );
     }
 
     const db = createDb();
+
+    const isEmperor = await db.query.userRoles.findFirst({
+      where: eq(userRoles.userId, userId),
+      with: {
+        role: true,
+      },
+    }).then(userRole => userRole?.role.name === ROLES.EMPEROR);
+
+    if (isEmperor) {
+      return Response.json(
+        { error: "不能降级皇帝" },
+        { status: 400 }
+      );
+    }
 
     let targetRole = await db.query.roles.findFirst({
       where: eq(roles.name, roleName),

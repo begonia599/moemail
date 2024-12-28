@@ -36,7 +36,10 @@ async function findOrCreateRole(db: Db, roleName: Role) {
   return role
 }
 
-async function assignRoleToUser(db: Db, userId: string, roleId: string) {
+export async function assignRoleToUser(db: Db, userId: string, roleId: string) {
+  await db.delete(userRoles)
+    .where(eq(userRoles.userId, userId))
+
   await db.insert(userRoles)
     .values({
       userId,

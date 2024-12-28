@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth";
+import { auth, assignRoleToUser } from "@/lib/auth";
 import { createDb } from "@/lib/db";
 import { roles, userRoles } from "@/lib/schema";
 import { ROLES } from "@/lib/permissions";
@@ -26,6 +26,17 @@ export async function GET() {
   }
 
   try {
+    const currentUserRole = await db.query.userRoles.findFirst({
+      where: eq(userRoles.userId, session.user.id),
+      with: {
+        role: true,
+      },
+    });
+
+    if (currentUserRole?.role.name === ROLES.EMPEROR) {
+      return Response.json({ message: "你已经是皇帝了" });
+    }
+
     let roleId = emperorRole?.id;
     if (!roleId) {
       const [newRole] = await db.insert(roles)
@@ -37,11 +48,7 @@ export async function GET() {
       roleId = newRole.id;
     }
 
-    await db.insert(userRoles)
-      .values({
-        userId: session.user.id,
-        roleId,
-      });
+    await assignRoleToUser(db, session.user.id, roleId);
 
     return Response.json({ message: "登基成功，你已成为皇帝" });
   } catch (error) {
