@@ -24,12 +24,11 @@ const handleEmail = async (message: ForwardableEmailMessage, env: Env) => {
     }
 
     const savedMessage = await db.insert(messages).values({
-      // @ts-expect-error "ignore"
       emailId: targetEmail.id,
       fromAddress: message.from,
-      subject: parsedMessage.subject,
-      content: parsedMessage.text,
-      html: parsedMessage.html || null,
+      subject: parsedMessage.subject || '(无主题)',
+      content: parsedMessage.text || '',
+      html: parsedMessage.html || '',
     }).returning().get()
 
     const webhook = await db.query.webhooks.findFirst({
