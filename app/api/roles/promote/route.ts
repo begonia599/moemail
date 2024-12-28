@@ -2,12 +2,16 @@ import { createDb } from "@/lib/db";
 import { roles, userRoles } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 import { ROLES } from "@/lib/permissions";
+import { assignRoleToUser } from "@/lib/auth";
 
 export const runtime = "edge";
 
 export async function POST(request: Request) {
   try {
-    const { userId, roleName } = await request.json() as { userId: string, roleName: string };
+    const { userId, roleName } = await request.json() as { 
+      userId: string, 
+      roleName: typeof ROLES.KNIGHT | typeof ROLES.CIVILIAN 
+    };
     if (!userId || !roleName) {
       return Response.json(
         { error: "缺少必要参数" },
@@ -15,23 +19,23 @@ export async function POST(request: Request) {
       );
     }
 
-    if (roleName !== ROLES.KNIGHT) {
+    if (![ROLES.KNIGHT, ROLES.CIVILIAN].includes(roleName)) {
       return Response.json(
-        { error: "只能册封骑士" },
+        { error: "角色不合法" },
         { status: 400 }
       );
     }
 
     const db = createDb();
 
-    const isEmperor = await db.query.userRoles.findFirst({
+    const currentUserRole = await db.query.userRoles.findFirst({
       where: eq(userRoles.userId, userId),
       with: {
         role: true,
       },
-    }).then(userRole => userRole?.role.name === ROLES.EMPEROR);
+    });
 
-    if (isEmperor) {
+    if (currentUserRole?.role.name === ROLES.EMPEROR) {
       return Response.json(
         { error: "不能降级皇帝" },
         { status: 400 }
@@ -43,29 +47,29 @@ export async function POST(request: Request) {
     });
 
     if (!targetRole) {
+      const description = roleName === ROLES.KNIGHT 
+        ? "高级用户" 
+        : "普通用户";
+
       const [newRole] = await db.insert(roles)
         .values({
           name: roleName,
-          description: "高级用户",
+          description,
         })
         .returning();
       targetRole = newRole;
     }
 
-    await db.delete(userRoles)
-      .where(eq(userRoles.userId, userId));
+    await assignRoleToUser(db, userId, targetRole.id);
 
-    await db.insert(userRoles)
-      .values({
-        userId,
-        roleId: targetRole.id,
-      });
-
-    return Response.json({ success: true });
+    return Response.json({ 
+      success: true,
+      message: roleName === ROLES.KNIGHT ? "册封成功" : "贬为平民"
+    });
   } catch (error) {
-    console.error("Failed to promote user:", error);
+    console.error("Failed to change user role:", error);
     return Response.json(
-      { error: "升级用户失败" },
+      { error: "操作失败" },
       { status: 500 }
     );
   }

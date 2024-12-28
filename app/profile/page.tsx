@@ -13,13 +13,11 @@ export default async function ProfilePage() {
   }
 
   return (
-    <div className="bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 h-screen">
-      <div className="container mx-auto h-full px-4 lg:px-8 max-w-[1600px]">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+      <div className="container mx-auto px-4 lg:px-8 max-w-[1600px]">
         <Header />
-        <main className="h-full">
-          <div className="pt-20 pb-5 h-full">
-            <ProfileCard user={session.user} />
-          </div>
+        <main className="pt-20 pb-5">
+          <ProfileCard user={session.user} />
         </main>
       </div>
     </div>
