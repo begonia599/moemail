@@ -127,6 +127,36 @@ pnpm generate-test-data
 
 ## 部署
 
+### 部署前准备
+
+在开始部署之前，需要在 Cloudflare 控制台完成以下准备工作：
+
+1. **创建 D1 数据库**
+   - 登录 [Cloudflare 控制台](https://dash.cloudflare.com/)
+   - 选择 “存储与数据库” -> “D1 SQL 数据库”
+   - 创建一个数据库（例如：moemail）
+   - 记录下数据库名称和数据库 ID，后续配置需要用到
+
+2. **创建 KV 命名空间**
+   - 登录 [Cloudflare 控制台](https://dash.cloudflare.com/)
+   - 选择 “存储与数据库” -> “KV”
+   - 创建一个 KV 命名空间（例如：moemail）
+   - 记录下命名空间 ID，后续配置需要用到
+
+3. **创建 Pages 项目**
+   - 登录 [Cloudflare 控制台](https://dash.cloudflare.com/)
+   - 选择 “Workers 和 Pages”
+   - 点击 “创建” 并选择 “Pages” 标签
+   - 选择 “使用直接上传创建”
+   - 点击 “上传资产”
+   - 输入项目名称
+      - 注意：项目名称必须为 moemail，否则无法正常部署
+   - 输入项目名称后，点击 “创建项目” 即可，不需要上传任何文件以及点击“部署站点”，之后我们会通过 本地运行Wrangler 或者通过 Github Actions 自动部署
+4. **为 Pages 项目添加 AUTH 认证相关的 SECRETS**
+   - 在 Overview 中选择刚刚创建的 Pages 项目
+   - 在 Settings 中选择变量和机密
+   - 添加 AUTH_GITHUB_ID, AUTH_GITHUB_SECRET, AUTH_SECRET
+
 ### 本地 Wrangler 部署
 
 1. 设置 wrangler：
@@ -174,7 +204,6 @@ pnpm deploy:cleanup
    - `CLOUDFLARE_ACCOUNT_ID`: Cloudflare 账户 ID
    - `DATABASE_NAME`: D1 数据库名称
    - `DATABASE_ID`: D1 数据库 ID
-   - `NEXT_PUBLIC_EMAIL_DOMAIN`: 邮箱域名 (例如: moemail.app)
    - `KV_NAMESPACE_ID`: Cloudflare KV namespace ID，用于存储网站配置
 
 2. 选择触发方式：
@@ -211,15 +240,6 @@ pnpm deploy:cleanup
 - 每次部署都会重新部署主应用
 
 [![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/beilunyang/moemail)
-
-
-### 初次部署完成后
-初次通过本地 Wrangler 或者 Github Actions 部署完成后，请登录到 Cloudflare 控制台，添加 AUTH 认证 相关 SECRETS
-- 登录 [Cloudflare 控制台](https://dash.cloudflare.com/) 并选择你的账户
-- 选择 Workers 和 Pages
-- 在 Overview 中选择刚刚部署的 Cloudflare Pages
-- 在 Settings 中选择变量和机密
-- 添加 AUTH_GITHUB_ID, AUTH_GITHUB_SECRET, AUTH_SECRET
 
 
 ## 邮箱域名配置
