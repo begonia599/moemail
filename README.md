@@ -124,8 +124,10 @@ pnpm test:cleanup
 ```bash
 pnpm generate-test-data
 ```
-
 ## 部署
+
+### 视频版部署教程
+https://www.bilibili.com/video/BV19wrXY2ESM/
 
 ### 部署前准备
 
