@@ -39,6 +39,7 @@ export function LoginForm() {
     const newErrors: FormErrors = {}
     if (!username) newErrors.username = "请输入用户名"
     if (!password) newErrors.password = "请输入密码"
+    if (username.includes('@')) newErrors.username = "用户名不能包含 @ 符号"
     if (password && password.length < 8) newErrors.password = "密码长度必须大于等于8位"
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
@@ -48,6 +49,7 @@ export function LoginForm() {
     const newErrors: FormErrors = {}
     if (!username) newErrors.username = "请输入用户名"
     if (!password) newErrors.password = "请输入密码"
+    if (username.includes('@')) newErrors.username = "用户名不能包含 @ 符号"
     if (password && password.length < 8) newErrors.password = "密码长度必须大于等于8位"
     if (!confirmPassword) newErrors.confirmPassword = "请确认密码"
     if (password !== confirmPassword) newErrors.confirmPassword = "两次输入的密码不一致"
