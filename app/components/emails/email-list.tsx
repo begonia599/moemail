@@ -202,7 +202,10 @@ export function EmailList({ onEmailSelect, selectedEmailId }: EmailListProps) {
                     variant="ghost"
                     size="icon"
                     className="opacity-0 group-hover:opacity-100 h-8 w-8"
-                    onClick={() => setEmailToDelete(email)}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setEmailToDelete(email)
+                    }}
                   >
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
