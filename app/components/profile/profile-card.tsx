@@ -47,10 +47,15 @@ export function ProfileCard({ user }: ProfileCardProps) {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-bold truncate">{user.name}</h2>
-              <div className="flex items-center gap-1 text-xs text-primary bg-primary/10 px-2 py-0.5 rounded-full flex-shrink-0">
-                <Github className="w-3 h-3" />
-                已关联
-              </div>
+              {
+                user.email && (
+                  // 先简单实现，后续再完善
+                  <div className="flex items-center gap-1 text-xs text-primary bg-primary/10 px-2 py-0.5 rounded-full flex-shrink-0">
+                    <Github className="w-3 h-3" />
+                    已关联
+                  </div>
+                )
+              }
             </div>
             <p className="text-sm text-muted-foreground truncate mt-1">
               {user.email}

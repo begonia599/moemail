@@ -2,23 +2,30 @@
 
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
-import { signIn, signOut, useSession } from "next-auth/react"
-import { Github } from "lucide-react"
+import { signOut, useSession } from "next-auth/react"
+import { LogIn } from "lucide-react"
+import { useRouter } from 'next/navigation'
 import Link from "next/link"
+import { cn } from "@/lib/utils"
 
-export function SignButton() {
+interface SignButtonProps {
+  size?: "default" | "lg"
+}
+
+export function SignButton({ size = "default" }: SignButtonProps) {
+  const router = useRouter()
   const { data: session, status } = useSession()
   const loading = status === "loading"
 
   if (loading) {
-    return <div className="h-9" /> // 防止布局跳动
+    return <div className="h-9" />
   }
 
   if (!session?.user) {
     return (
-      <Button onClick={() => signIn("github", { callbackUrl: "/moe" })} className="gap-2">
-        <Github className="w-4 h-4" />
-        使用 GitHub 登录
+      <Button onClick={() => router.push('/login')} className={cn("gap-2", size === "lg" ? "px-8" : "")} size={size}>
+        <LogIn className={size === "lg" ? "w-5 h-5" : "w-4 h-4"} />
+        登录/注册
       </Button>
     )
   }
@@ -40,7 +47,7 @@ export function SignButton() {
         )}
         <span className="text-sm">{session.user.name}</span>
       </Link>
-      <Button onClick={() => signOut({ callbackUrl: "/" })} variant="outline" className="flex-shrink-0">
+      <Button onClick={() => signOut({ callbackUrl: "/" })} variant="outline" className={cn("flex-shrink-0", size === "lg" ? "px-8" : "")} size={size}>
         登出
       </Button>
     </div>

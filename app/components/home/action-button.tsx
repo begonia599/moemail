@@ -1,9 +1,9 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Mail, Github } from "lucide-react"
+import { Mail } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { signIn } from "next-auth/react"
+import { SignButton } from "../auth/sign-button"
 
 interface ActionButtonProps {
   isLoggedIn?: boolean
@@ -25,14 +25,5 @@ export function ActionButton({ isLoggedIn }: ActionButtonProps) {
     )
   }
 
-  return (
-    <Button 
-      size="lg" 
-      onClick={() => signIn("github", { callbackUrl: "/moe" })}
-      className="gap-2 bg-primary hover:bg-primary/90 text-white px-8"
-    >
-      <Github className="w-5 h-5" />
-      使用 GitHub 登录
-    </Button>
-  )
+  return <SignButton size="lg" />
 } 

@@ -11,8 +11,9 @@ export const users = sqliteTable("user", {
   email: text("email").unique(),
   emailVerified: integer("emailVerified", { mode: "timestamp_ms" }),
   image: text("image"),
+  username: text("username").unique(),
+  password: text("password"),
 })
- 
 export const accounts = sqliteTable(
   "account",
   {
@@ -36,15 +37,7 @@ export const accounts = sqliteTable(
     }),
   })
 )
- 
-export const sessions = sqliteTable("session", {
-  sessionToken: text("sessionToken").primaryKey(),
-  userId: text("userId")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  expires: integer("expires", { mode: "timestamp_ms" }).notNull(),
-})
- 
+
 export const emails = sqliteTable("email", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   address: text("address").notNull().unique(),
@@ -54,7 +47,7 @@ export const emails = sqliteTable("email", {
     .$defaultFn(() => new Date()),
   expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
 })
- 
+
 export const messages = sqliteTable("message", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   emailId: text("emailId")
@@ -68,7 +61,7 @@ export const messages = sqliteTable("message", {
     .notNull()
     .$defaultFn(() => new Date()),
 })
- 
+
 export const webhooks = sqliteTable('webhook', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   userId: text('user_id')
