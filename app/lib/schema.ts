@@ -85,10 +85,6 @@ export const roles = sqliteTable("role", {
   updatedAt: integer("updated_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
 });
 
-export const rolesRelations = relations(roles, ({ many }) => ({
-  userRoles: many(userRoles),
-}));
-
 export const userRoles = sqliteTable("user_role", {
   userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   roleId: text("role_id").notNull().references(() => roles.id, { onDelete: "cascade" }),
@@ -106,4 +102,12 @@ export const userRolesRelations = relations(userRoles, ({ one }) => ({
     fields: [userRoles.roleId],
     references: [roles.id],
   }),
+}));
+
+export const usersRelations = relations(users, ({ many }) => ({
+  userRoles: many(userRoles),
 })); 
+
+export const rolesRelations = relations(roles, ({ many }) => ({
+  userRoles: many(userRoles),
+}));

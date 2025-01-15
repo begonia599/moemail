@@ -1,43 +1,49 @@
 import { createDb } from "@/lib/db"
-import { userRoles, users } from "@/lib/schema"
+import { users } from "@/lib/schema"
 import { eq } from "drizzle-orm"
 
 export const runtime = "edge"
 
-export async function GET(request: Request) {
-  const url = new URL(request.url)
-  const email = url.searchParams.get('email')
+export async function POST(request: Request) {
+  try {
+    const json = await request.json()
+    const { searchText } = json as { searchText: string }
 
-  if (!email) {
+    if (!searchText) {
+      return Response.json({ error: "请提供用户名或邮箱地址" }, { status: 400 })
+    }
+
+    const db = createDb()
+
+    const user = await db.query.users.findFirst({
+      where: searchText.includes('@') ? eq(users.email, searchText) : eq(users.username, searchText),
+      with: {
+        userRoles: {
+          with: {
+            role: true
+          }
+        }
+      }
+    });
+
+    if (!user) {
+      return Response.json({ error: "未找到用户" }, { status: 404 })
+    }
+
+    return Response.json({
+      user: {
+        id: user.id,
+        name: user.name,
+        username: user.username,
+        email: user.email,
+        role: user.userRoles[0]?.role.name
+      }
+    })
+  } catch (error) {
+    console.error("Failed to find user:", error)
     return Response.json(
-      { error: "邮箱地址不能为空" },
-      { status: 400 }
+      { error: "查询用户失败" },
+      { status: 500 }
     )
   }
-
-  const db = createDb()
-  
-  const user = await db.query.users.findFirst({
-    where: eq(users.email, email),
-  })
-
-  if (!user) {
-    return Response.json({ user: null })
-  }
-
-  const userRole = await db.query.userRoles.findFirst({
-    where: eq(userRoles.userId, user.id),
-    with: {
-      role: true
-    }
-  })
-
-  return Response.json({
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: userRole?.role.name
-    }
-  })
 } 

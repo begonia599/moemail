@@ -8,20 +8,34 @@ import { useToast } from "@/components/ui/use-toast"
 import { ROLES } from "@/lib/permissions"
 
 export function PromotePanel() {
-  const [email, setEmail] = useState("")
+  const [searchText, setSearchText] = useState("")
   const [loading, setLoading] = useState(false)
   const [action, setAction] = useState<"promote" | "demote">("promote")
   const { toast } = useToast()
 
   const handleAction = async () => {
-    if (!email) return
+    if (!searchText) return
 
     setLoading(true)
     try {
-      const res = await fetch(`/api/roles/users?email=${encodeURIComponent(email)}`)
-      const data = await res.json() as { user?: { id: string; name?: string; email: string; role?: string }; error?: string }
+      const res = await fetch("/api/roles/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ searchText })
+      })
+      const data = await res.json() as { 
+        user?: { 
+          id: string
+          name?: string
+          username?: string
+          email: string
+          role?: string 
+        }
+        error?: string 
+      }
 
-      if (!res.ok) throw new Error(data.error || '未知错误')
+      if (!res.ok) throw new Error(data.error || "未知错误")
+
       if (!data.user) {
         toast({
           title: "未找到用户",
@@ -61,9 +75,9 @@ export function PromotePanel() {
 
       toast({
         title: action === "promote" ? "册封成功" : "贬为平民",
-        description: `已将 ${data.user.email} ${action === "promote" ? "册封为骑士" : "贬为平民"}`
+        description: `已将 ${data.user.email || data.user.username} ${action === "promote" ? "册封为骑士" : "贬为平民"}`
       })
-      setEmail("")
+      setSearchText("")
 
     } catch (error) {
       toast({
@@ -86,9 +100,9 @@ export function PromotePanel() {
       <div className="flex flex-col sm:flex-row gap-2">
         <div className="flex-1">
           <Input
-            placeholder="输入用户邮箱"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            placeholder="输入用户名或邮箱"
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
             disabled={loading}
           />
         </div>
@@ -98,7 +112,7 @@ export function PromotePanel() {
               setAction("promote")
               handleAction()
             }}
-            disabled={!email || loading}
+            disabled={!searchText || loading}
             className="flex-1 sm:flex-initial gap-2"
           >
             {loading && action === "promote" ? (
@@ -113,7 +127,7 @@ export function PromotePanel() {
               setAction("demote")
               handleAction()
             }}
-            disabled={!email || loading}
+            disabled={!searchText || loading}
             variant="destructive"
             className="flex-1 sm:flex-initial gap-2"
           >
