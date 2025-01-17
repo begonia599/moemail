@@ -14,15 +14,11 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const cursor = searchParams.get('cursor')
   
-  if (!session?.user?.email) {
-    return NextResponse.json({ emails: [], nextCursor: null, total: 0 })
-  }
-
   const db = createDb()
 
   try {
     const baseConditions = and(
-      eq(emails.userId, session.user.id!),
+      eq(emails.userId, session!.user!.id!),
       gt(emails.expiresAt, new Date())
     )
 
