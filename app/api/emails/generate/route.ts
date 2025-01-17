@@ -57,7 +57,7 @@ export async function POST(request: Request) {
 
     const address = `${name || nanoid(8)}@${domain}`
     const existingEmail = await db.query.emails.findFirst({
-      where: eq(emails.address, address)
+      where: eq(sql`LOWER(${emails.address})`, address.toLowerCase())
     })
 
     if (existingEmail) {

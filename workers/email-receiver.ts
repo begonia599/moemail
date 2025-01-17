@@ -1,7 +1,7 @@
 import { Env } from '../types'
 import { drizzle } from 'drizzle-orm/d1'
 import { messages, emails, webhooks } from '../app/lib/schema'
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import PostalMime from 'postal-mime'
 import { WEBHOOK_CONFIG } from '../app/config/webhook'
 import { EmailMessage } from '../app/lib/webhook'
@@ -15,7 +15,7 @@ const handleEmail = async (message: ForwardableEmailMessage, env: Env) => {
 
   try {
     const targetEmail = await db.query.emails.findFirst({
-      where: eq(emails.address, message.to)
+      where: eq(sql`LOWER(${emails.address})`, message.to.toLowerCase())
     })
 
     if (!targetEmail) {
