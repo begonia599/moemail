@@ -120,6 +120,7 @@ export function ApiKeyPanel() {
         )
       )
     } catch (error) {
+      console.error(error)
       toast({
         title: "更新失败",
         description: "更新 API Key 状态失败",
@@ -142,6 +143,7 @@ export function ApiKeyPanel() {
         description: "API Key 已删除"
       })
     } catch (error) {
+      console.error(error)
       toast({
         title: "删除失败",
         description: "删除 API Key 失败",
@@ -270,7 +272,7 @@ export function ApiKeyPanel() {
                 <div>
                   <h3 className="text-lg font-medium">没有 API Keys</h3>
                   <p className="text-sm text-muted-foreground mt-1">
-                    点击上方的"创建 API Key"按钮来创建你的第一个 API Key
+                    点击上方的创建 &quot;API Key&quot; 按钮来创建你的第一个 API Key
                   </p>
                 </div>
               </div>
