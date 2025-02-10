@@ -449,7 +449,7 @@ curl -X POST https://your-domain.com/api/emails/generate \
 
 使用 JavaScript 获取邮件列表：
 ```javascript
-const res = await fetch('https://your-domain.com/api/emails/your-email-id/messages', {
+const res = await fetch('https://your-domain.com/api/emails/your-email-id', {
   headers: {
     'X-API-Key': 'YOUR_API_KEY'
   }
@@ -505,4 +505,3 @@ const data = await res.json();
 <br />
 <br />
 <a href="https://www.buymeacoffee.com/beilunyang" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png" alt="Buy Me A Coffee" style="width: 400px;" ></a>
-如二维码失效，请添加我的个人微信（hansenones），并备注 “MoeMail” 加入微信交流群
