@@ -411,33 +411,26 @@ Content-Type: application/json
 
 #### 获取邮箱列表
 ```http
-GET /api/emails?cursor=xxx&limit=10
+GET /api/emails?cursor=xxx
 ```
 参数说明：
 - `cursor`: 分页游标，可选
-- `limit`: 每页数量，默认 10
 
-#### 获取单个邮箱
+#### 获取指定邮箱邮件列表
 ```http
-GET /api/emails/{emailId}
+GET /api/emails/{emailId}?cursor=xxx
 ```
+参数说明：
+- `cursor`: 分页游标，可选
 
 #### 删除邮箱
 ```http
 DELETE /api/emails/{emailId}
 ```
 
-#### 获取邮件列表
+#### 获取单封邮件内容
 ```http
-GET /api/emails/{emailId}/messages?cursor=xxx&limit=10
-```
-参数说明：
-- `cursor`: 分页游标，可选
-- `limit`: 每页数量，默认 10
-
-#### 获取单封邮件
-```http
-GET /api/emails/{emailId}/messages/{messageId}
+GET /api/emails/{emailId}/{messageId}
 ```
 
 ### 使用示例

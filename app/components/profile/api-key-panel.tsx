@@ -324,7 +324,7 @@ export function ApiKeyPanel() {
                             variant="ghost"
                             size="icon"
                             onClick={() => copyToClipboard(
-                              `curl -X POST https://${window.location.host}/api/emails/generate \\
+                              `curl -X POST ${window.location.protocol}//${window.location.host}/api/emails/generate \\
   -H "X-API-Key: YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -338,7 +338,7 @@ export function ApiKeyPanel() {
                           </Button>
                         </div>
                         <pre className="text-xs bg-muted/50 rounded-lg p-4 overflow-x-auto">
-                          {`curl -X POST https://${window.location.host}/api/emails/generate \\
+                          {`curl -X POST ${window.location.protocol}//${window.location.host}/api/emails/generate \\
   -H "X-API-Key: YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -356,7 +356,7 @@ export function ApiKeyPanel() {
                             variant="ghost"
                             size="icon"
                             onClick={() => copyToClipboard(
-                              `curl https://${window.location.host}/api/emails?cursor=CURSOR \\
+                              `curl ${window.location.protocol}//${window.location.host}/api/emails?cursor=CURSOR \\
   -H "X-API-Key: YOUR_API_KEY"`
                             )}
                           >
@@ -364,7 +364,7 @@ export function ApiKeyPanel() {
                           </Button>
                         </div>
                         <pre className="text-xs bg-muted/50 rounded-lg p-4 overflow-x-auto">
-                          {`curl https://${window.location.host}/api/emails?cursor=CURSOR \\
+                          {`curl ${window.location.protocol}//${window.location.host}/api/emails?cursor=CURSOR \\
   -H "X-API-Key: YOUR_API_KEY"`}
                         </pre>
                       </div>
@@ -376,7 +376,7 @@ export function ApiKeyPanel() {
                             variant="ghost"
                             size="icon"
                             onClick={() => copyToClipboard(
-                              `curl https://${window.location.host}/api/emails/{emailId}/messages?cursor=CURSOR \\
+                              `curl ${window.location.protocol}//${window.location.host}/api/emails/{emailId}?cursor=CURSOR \\
   -H "X-API-Key: YOUR_API_KEY"`
                             )}
                           >
@@ -384,7 +384,7 @@ export function ApiKeyPanel() {
                           </Button>
                         </div>
                         <pre className="text-xs bg-muted/50 rounded-lg p-4 overflow-x-auto">
-                          {`curl https://${window.location.host}/api/emails/{emailId}/messages?cursor=CURSOR \\
+                          {`curl ${window.location.protocol}//${window.location.host}/api/emails/{emailId}?cursor=CURSOR \\
   -H "X-API-Key: YOUR_API_KEY"`}
                         </pre>
                       </div>
@@ -396,7 +396,7 @@ export function ApiKeyPanel() {
                             variant="ghost"
                             size="icon"
                             onClick={() => copyToClipboard(
-                              `curl https://${window.location.host}/api/emails/{emailId}/{messageId} \\
+                              `curl ${window.location.protocol}//${window.location.host}/api/emails/{emailId}/{messageId} \\
   -H "X-API-Key: YOUR_API_KEY"`
                             )}
                           >
@@ -404,7 +404,7 @@ export function ApiKeyPanel() {
                           </Button>
                         </div>
                         <pre className="text-xs bg-muted/50 rounded-lg p-4 overflow-x-auto">
-                          {`curl https://${window.location.host}/api/emails/{emailId}/{messageId} \\
+                          {`curl ${window.location.protocol}//${window.location.host}/api/emails/{emailId}/{messageId} \\
   -H "X-API-Key: YOUR_API_KEY"`}
                         </pre>
                       </div>
