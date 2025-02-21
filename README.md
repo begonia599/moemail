@@ -273,6 +273,7 @@ pnpm deploy:cleanup
 ### 注意事项
 - 确保域名的 DNS 托管在 Cloudflare
 - Email Worker 必须已经部署成功
+- 如果Catch-All 状态不可用，请在点击`路由规则`旁边的`目标地址`进去绑定一个邮箱
 
 ## 权限系统
 
