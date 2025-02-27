@@ -7,29 +7,35 @@ import { EXPIRY_OPTIONS } from "@/types/email"
 import { EMAIL_CONFIG } from "@/config"
 import { getRequestContext } from "@cloudflare/next-on-pages"
 import { getUserId } from "@/lib/apiKey"
+import { getUserRole } from "@/lib/auth"
+import { ROLES } from "@/lib/permissions"
+
 export const runtime = "edge"
 
 export async function POST(request: Request) {
   const db = createDb()
 
   const userId = await getUserId()
+  const userRole = await getUserRole(userId!)
 
   try {
-    const activeEmailsCount = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(emails)
-      .where(
-        and(
-          eq(emails.userId, userId!),
-          gt(emails.expiresAt, new Date())
+    if (userRole !== ROLES.EMPEROR) {
+      const activeEmailsCount = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(emails)
+        .where(
+          and(
+            eq(emails.userId, userId!),
+            gt(emails.expiresAt, new Date())
+          )
         )
-      )
-    
-    if (Number(activeEmailsCount[0].count) >= EMAIL_CONFIG.MAX_ACTIVE_EMAILS) {
-      return NextResponse.json(
-        { error: `已达到最大邮箱数量限制 (${EMAIL_CONFIG.MAX_ACTIVE_EMAILS})` },
-        { status: 403 }
-      )
+      
+      if (Number(activeEmailsCount[0].count) >= EMAIL_CONFIG.MAX_ACTIVE_EMAILS) {
+        return NextResponse.json(
+          { error: `已达到最大邮箱数量限制 (${EMAIL_CONFIG.MAX_ACTIVE_EMAILS})` },
+          { status: 403 }
+        )
+      }
     }
 
     const { name, expiryTime, domain } = await request.json<{ 
