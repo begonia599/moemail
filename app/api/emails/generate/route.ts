@@ -14,12 +14,14 @@ export const runtime = "edge"
 
 export async function POST(request: Request) {
   const db = createDb()
+  const env = getRequestContext().env
 
   const userId = await getUserId()
   const userRole = await getUserRole(userId!)
 
   try {
     if (userRole !== ROLES.EMPEROR) {
+      const maxEmails = await env.SITE_CONFIG.get("MAX_EMAILS") || EMAIL_CONFIG.MAX_ACTIVE_EMAILS.toString()
       const activeEmailsCount = await db
         .select({ count: sql<number>`count(*)` })
         .from(emails)
@@ -30,9 +32,9 @@ export async function POST(request: Request) {
           )
         )
       
-      if (Number(activeEmailsCount[0].count) >= EMAIL_CONFIG.MAX_ACTIVE_EMAILS) {
+      if (Number(activeEmailsCount[0].count) >= Number(maxEmails)) {
         return NextResponse.json(
-          { error: `已达到最大邮箱数量限制 (${EMAIL_CONFIG.MAX_ACTIVE_EMAILS})` },
+          { error: `已达到最大邮箱数量限制 (${maxEmails})` },
           { status: 403 }
         )
       }
@@ -51,7 +53,7 @@ export async function POST(request: Request) {
       )
     }
 
-    const domainString = await getRequestContext().env.SITE_CONFIG.get("EMAIL_DOMAINS")
+    const domainString = await env.SITE_CONFIG.get("EMAIL_DOMAINS")
     const domains = domainString ? domainString.split(',') : ["moemail.app"]
 
     if (!domains || !domains.includes(domain)) {

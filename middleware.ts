@@ -32,6 +32,10 @@ export async function middleware(request: Request) {
     )
   }
 
+  if (pathname === '/api/config' && request.method === 'GET') {
+    return NextResponse.next()
+  }
+
   for (const [route, permission] of Object.entries(API_PERMISSIONS)) {
     if (pathname.startsWith(route)) {
       const hasAccess = await checkPermission(permission)
