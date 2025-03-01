@@ -60,6 +60,5 @@ export const config = {
     '/api/roles/:path*',
     '/api/config/:path*',
     '/api/api-keys/:path*',
-    '/api/admin-contact',
   ]
 } 

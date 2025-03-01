@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { ROLES } from "@/lib/permissions"
 import { useUserRole } from "@/hooks/use-user-role"
+import { useConfig } from "@/hooks/use-config"
 
 interface Email {
   id: string
@@ -42,6 +43,7 @@ interface EmailResponse {
 
 export function EmailList({ onEmailSelect, selectedEmailId }: EmailListProps) {
   const { data: session } = useSession()
+  const { config } = useConfig()
   const { role } = useUserRole()
   const [emails, setEmails] = useState<Email[]>([])
   const [loading, setLoading] = useState(true)
@@ -49,21 +51,8 @@ export function EmailList({ onEmailSelect, selectedEmailId }: EmailListProps) {
   const [nextCursor, setNextCursor] = useState<string | null>(null)
   const [loadingMore, setLoadingMore] = useState(false)
   const [total, setTotal] = useState(0)
-  const [maxEmails, setMaxEmails] = useState<number>(EMAIL_CONFIG.MAX_ACTIVE_EMAILS)
   const [emailToDelete, setEmailToDelete] = useState<Email | null>(null)
   const { toast } = useToast()
-
-  const fetchMaxEmails = async () => {
-    try {
-      const res = await fetch("/api/config")
-      if (res.ok) {
-        const data = await res.json() as { maxEmails: string }
-        setMaxEmails(Number(data.maxEmails))
-      }
-    } catch (error) {
-      console.error("Failed to fetch max emails:", error)
-    }
-  }
 
   const fetchEmails = async (cursor?: string) => {
     try {
@@ -125,10 +114,6 @@ export function EmailList({ onEmailSelect, selectedEmailId }: EmailListProps) {
 
   useEffect(() => {
     if (session) fetchEmails()
-    if (session && role !== ROLES.EMPEROR) {
-      fetchMaxEmails()
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session])
 
   const handleDelete = async (email: Email) => {
@@ -189,7 +174,7 @@ export function EmailList({ onEmailSelect, selectedEmailId }: EmailListProps) {
               {role === ROLES.EMPEROR ? (
                 `${total}/∞ 个邮箱`
               ) : (
-                `${total}/${maxEmails} 个邮箱`
+                `${total}/${config?.maxEmails || EMAIL_CONFIG.MAX_ACTIVE_EMAILS} 个邮箱`
               )}
             </span>
           </div>

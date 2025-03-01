@@ -15,7 +15,7 @@ export async function GET() {
 
   return Response.json({
     defaultRole: defaultRole || ROLES.CIVILIAN,
-    emailDomains: emailDomains || "",
+    emailDomains: emailDomains || "moemail.app",
     adminContact: adminContact || "",
     maxEmails: maxEmails || EMAIL_CONFIG.MAX_ACTIVE_EMAILS.toString()
   })
