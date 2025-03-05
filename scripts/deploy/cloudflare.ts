@@ -3,7 +3,7 @@ import "dotenv/config";
 
 const CF_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID!;
 const CF_API_TOKEN = process.env.CLOUDFLARE_API_TOKEN;
-const PROJECT_URL = process.env.PROJECT_URL;
+const CUSTOM_DOMAIN = process.env.CUSTOM_DOMAIN;
 const PROJECT_NAME = process.env.PROJECT_NAME || "moemail";
 const DB_NAME = process.env.DATABASE_NAME || "moemail-db";
 const KV_NAMESPACE_NAME = process.env.KV_NAME || "moemail-kv";
@@ -34,12 +34,12 @@ export const createPages = async () => {
       production_branch: "main",
     });
 
-    if (PROJECT_URL) {
+    if (CUSTOM_DOMAIN) {
       console.log("🔗 Setting pages domain...");
 
       await client.pages.projects.domains.create(PROJECT_NAME, {
         account_id: CF_ACCOUNT_ID,
-        name: PROJECT_URL?.split("://")[1],
+        name: CUSTOM_DOMAIN?.split("://")[1],
       });
 
       console.log("✅ Pages domain set successfully");

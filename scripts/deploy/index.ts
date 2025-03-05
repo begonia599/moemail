@@ -15,7 +15,7 @@ import {
 const PROJECT_NAME = process.env.PROJECT_NAME || "moemail";
 const DATABASE_NAME = process.env.DATABASE_NAME || "moemail-db";
 const KV_NAMESPACE_NAME = process.env.KV_NAME || "moemail-kv";
-const PROJECT_URL = process.env.PROJECT_URL;
+const CUSTOM_DOMAIN = process.env.CUSTOM_DOMAIN;
 const DATABASE_ID = process.env.DATABASE_ID || "";
 const KV_NAMESPACE_ID = process.env.KV_NAMESPACE_ID || "";
 
@@ -254,13 +254,13 @@ const checkAndCreatePages = async () => {
       console.log("⚠️ Project not found, creating new project...");
       const pages = await createPages();
 
-      if (!PROJECT_URL && pages.subdomain) {
-        console.log("⚠️ PROJECT_URL is empty, using pages default domain...");
+      if (!CUSTOM_DOMAIN && pages.subdomain) {
+        console.log("⚠️ CUSTOM_DOMAIN is empty, using pages default domain...");
         console.log("📝 Updating environment variables...");
         
         // 更新环境变量为默认的Pages域名
         const appUrl = `https://${pages.subdomain}`;
-        updateEnvVar("PROJECT_URL", appUrl);
+        updateEnvVar("CUSTOM_DOMAIN", appUrl);
       }
     } else {
       console.error(`❌ An error occurred while checking the project:`, error);
