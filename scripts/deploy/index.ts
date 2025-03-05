@@ -281,7 +281,40 @@ const pushPagesSecret = () => {
       setupEnvFile();
     }
     
-    execSync(`pnpm dlx wrangler pages secret bulk .env`, { stdio: "inherit" });
+    // 创建一个临时文件，只包含运行时所需的环境变量
+    const envContent = readFileSync(resolve('.env'), 'utf-8');
+    const runtimeEnvFile = resolve('.env.runtime');
+    
+    // 定义运行时所需的环境变量列表
+    const runtimeEnvVars = ['AUTH_GITHUB_ID', 'AUTH_GITHUB_SECRET', 'AUTH_SECRET'];
+    
+    // 从.env文件中提取运行时变量
+    const runtimeEnvContent = envContent
+      .split('\n')
+      .filter(line => {
+        const trimmedLine = line.trim();
+        // 跳过注释和空行
+        if (!trimmedLine || trimmedLine.startsWith('#')) return false;
+        
+        // 检查是否为运行时所需的环境变量
+        for (const varName of runtimeEnvVars) {
+          if (line.startsWith(`${varName} =`) || line.startsWith(`${varName}=`)) {
+            return true;
+          }
+        }
+        return false;
+      })
+      .join('\n');
+    
+    // 写入临时文件
+    writeFileSync(runtimeEnvFile, runtimeEnvContent);
+    
+    // 使用临时文件推送secrets
+    execSync(`pnpm dlx wrangler pages secret bulk ${runtimeEnvFile}`, { stdio: "inherit" });
+    
+    // 清理临时文件
+    execSync(`rm ${runtimeEnvFile}`, { stdio: "inherit" });
+    
     console.log("✅ Secrets pushed successfully");
   } catch (error) {
     console.error("❌ Failed to push secrets:", error);
