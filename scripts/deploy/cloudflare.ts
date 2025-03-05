@@ -96,6 +96,18 @@ export const getKVNamespace = async (namespaceId: string) => {
   }
 };
 
+export const getKVNamespaceList = async () => {
+  try {
+    const kvNamespaces = await client.kv.namespaces.list({
+      account_id: CF_ACCOUNT_ID,
+    });
+
+    return kvNamespaces;
+  } catch (error) {
+    throw error;
+  }
+}
+
 export const createKVNamespace = async () => {
   try {
     console.log(`🆕 Creating new KV namespace: "${KV_NAMESPACE_NAME}"`);

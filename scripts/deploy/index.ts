@@ -9,6 +9,7 @@ import {
   createPages,
   getDatabase,
   getKVNamespace,
+  getKVNamespaceList,
   getPages,
 } from "./cloudflare";
 
@@ -212,31 +213,30 @@ const checkAndCreateKVNamespace = async () => {
   console.log(`🔍 Checking if KV namespace "${KV_NAMESPACE_NAME}" exists...`);
 
   try {
-    if (!KV_NAMESPACE_ID) {
-      console.log("⚠️ KV_NAMESPACE_ID is not set, creating a new KV namespace...");
-      const namespace = await createKVNamespace();
-      updateKVConfig(namespace.id);
-      console.log(`✅ KV namespace "${KV_NAMESPACE_NAME}" created successfully (ID: ${namespace.id})`);
-      return;
-    }
+    let namespace;
 
-    const namespace = await getKVNamespace(KV_NAMESPACE_ID);
-    console.log(`✅ KV namespace "${KV_NAMESPACE_NAME}" already exists (ID: ${namespace.id})`);
-  } catch (error) {
-    if (error instanceof NotFoundError || (error instanceof Error && error.message?.includes("required"))) {
-      console.log(`⚠️ KV namespace not found or invalid, creating new KV namespace...`);
-      try {
-        const namespace = await createKVNamespace();
+    if (KV_NAMESPACE_ID) {
+      namespace = await getKVNamespace(KV_NAMESPACE_ID);
+      console.log(`✅ KV namespace "${KV_NAMESPACE_NAME}" already exists (ID: ${namespace.id})`);
+    } else {
+      console.log("⚠️ KV_NAMESPACE_ID is not set, checking by name...");
+
+      const namespaceList = await getKVNamespaceList();
+      namespace = namespaceList.result.find(ns => ns.title === KV_NAMESPACE_NAME);
+
+      if (namespace && namespace.id) {
+        updateKVConfig(namespace.id);
+        console.log(`✅ KV namespace "${KV_NAMESPACE_NAME}" found by name (ID: ${namespace.id})`);
+      } else {
+        console.log("⚠️ KV namespace not found by name, creating new KV namespace...");
+        namespace = await createKVNamespace();
         updateKVConfig(namespace.id);
         console.log(`✅ KV namespace "${KV_NAMESPACE_NAME}" created successfully (ID: ${namespace.id})`);
-      } catch (createError) {
-        console.error(`❌ Failed to create KV namespace:`, createError);
-        throw createError;
       }
-    } else {
-      console.error(`❌ An error occurred while checking the KV namespace:`, error);
-      throw error;
     }
+  } catch (error) {
+    console.error(`❌ An error occurred while checking the KV namespace:`, error);
+    throw error;
   }
 };
 
