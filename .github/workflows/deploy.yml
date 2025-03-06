@@ -41,10 +41,8 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           PROJECT_NAME: ${{ secrets.PROJECT_NAME }}
           DATABASE_NAME: ${{ secrets.DATABASE_NAME }}
-          KV_NAME: ${{ secrets.KV_NAME }}
+          KV_NAMESPACE_NAME: ${{ secrets.KV_NAMESPACE_NAME }}
           CUSTOM_DOMAIN: ${{ secrets.CUSTOM_DOMAIN }}
-          DATABASE_ID: ${{ secrets.DATABASE_ID }}
-          KV_NAMESPACE_ID: ${{ secrets.KV_NAMESPACE_ID }}
           AUTH_GITHUB_ID: ${{ secrets.AUTH_GITHUB_ID }}
           AUTH_GITHUB_SECRET: ${{ secrets.AUTH_GITHUB_SECRET }}
           AUTH_SECRET: ${{ secrets.AUTH_SECRET }}

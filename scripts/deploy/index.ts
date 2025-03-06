@@ -8,17 +8,14 @@ import {
   createKVNamespace,
   createPages,
   getDatabase,
-  getKVNamespace,
   getKVNamespaceList,
   getPages,
 } from "./cloudflare";
 
 const PROJECT_NAME = process.env.PROJECT_NAME || "moemail";
 const DATABASE_NAME = process.env.DATABASE_NAME || "moemail-db";
-const KV_NAMESPACE_NAME = process.env.KV_NAME || "moemail-kv";
+const KV_NAMESPACE_NAME = process.env.KV_NAMESPACE_NAME || "moemail-kv";
 const CUSTOM_DOMAIN = process.env.CUSTOM_DOMAIN;
-const DATABASE_ID = process.env.DATABASE_ID || "";
-const KV_NAMESPACE_ID = process.env.KV_NAMESPACE_ID || "";
 
 /**
  * 验证必要的环境变量
@@ -56,14 +53,6 @@ const setupConfigFile = (examplePath: string, targetPath: string) => {
     // 处理数据库配置
     if (json.d1_databases && json.d1_databases.length > 0) {
       json.d1_databases[0].database_name = DATABASE_NAME;
-      if (DATABASE_ID) {
-        json.d1_databases[0].database_id = DATABASE_ID;
-      }
-    }
-
-    // 处理KV配置
-    if (json.kv_namespaces && json.kv_namespaces.length > 0 && KV_NAMESPACE_ID) {
-      json.kv_namespaces[0].id = KV_NAMESPACE_ID;
     }
 
     // 写入配置文件
@@ -102,9 +91,6 @@ const setupWranglerConfigs = () => {
 const updateDatabaseConfig = (dbId: string) => {
   console.log(`📝 Updating database ID (${dbId}) in configurations...`);
 
-  // 更新环境变量
-  updateEnvVar("DATABASE_ID", dbId);
-
   // 更新所有配置文件
   const configFiles = [
     "wrangler.json",
@@ -135,9 +121,6 @@ const updateDatabaseConfig = (dbId: string) => {
 const updateKVConfig = (namespaceId: string) => {
   console.log(`📝 Updating KV namespace ID (${namespaceId}) in configurations...`);
   
-  // 更新环境变量
-  updateEnvVar("KV_NAMESPACE_ID", namespaceId);
-
   // KV命名空间只在主wrangler.json中使用
   const wranglerPath = resolve("wrangler.json");
   if (existsSync(wranglerPath)) {
@@ -215,24 +198,17 @@ const checkAndCreateKVNamespace = async () => {
   try {
     let namespace;
 
-    if (KV_NAMESPACE_ID) {
-      namespace = await getKVNamespace(KV_NAMESPACE_ID);
-      console.log(`✅ KV namespace "${KV_NAMESPACE_NAME}" already exists (ID: ${namespace.id})`);
+    const namespaceList = await getKVNamespaceList();
+    namespace = namespaceList.find(ns => ns.title === KV_NAMESPACE_NAME);
+
+    if (namespace && namespace.id) {
+      updateKVConfig(namespace.id);
+      console.log(`✅ KV namespace "${KV_NAMESPACE_NAME}" found by name (ID: ${namespace.id})`);
     } else {
-      console.log("⚠️ KV_NAMESPACE_ID is not set, checking by name...");
-
-      const namespaceList = await getKVNamespaceList();
-      namespace = namespaceList.result.find(ns => ns.title === KV_NAMESPACE_NAME);
-
-      if (namespace && namespace.id) {
-        updateKVConfig(namespace.id);
-        console.log(`✅ KV namespace "${KV_NAMESPACE_NAME}" found by name (ID: ${namespace.id})`);
-      } else {
-        console.log("⚠️ KV namespace not found by name, creating new KV namespace...");
-        namespace = await createKVNamespace();
-        updateKVConfig(namespace.id);
-        console.log(`✅ KV namespace "${KV_NAMESPACE_NAME}" created successfully (ID: ${namespace.id})`);
-      }
+      console.log("⚠️ KV namespace not found by name, creating new KV namespace...");
+      namespace = await createKVNamespace();
+      updateKVConfig(namespace.id);
+      console.log(`✅ KV namespace "${KV_NAMESPACE_NAME}" created successfully (ID: ${namespace.id})`);
     }
   } catch (error) {
     console.error(`❌ An error occurred while checking the KV namespace:`, error);
@@ -433,6 +409,7 @@ const updateEnvVar = (name: string, value: string) => {
 const main = async () => {
   try {
     console.log("🚀 Starting deployment process...");
+
     validateEnvironment();
     setupEnvFile();
     setupWranglerConfigs();
