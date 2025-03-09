@@ -35,7 +35,7 @@ export const createPages = async () => {
 
     await client.pages.projects.domains.create(PROJECT_NAME, {
       account_id: CF_ACCOUNT_ID,
-      name: CUSTOM_DOMAIN?.split("://")[1],
+      name: CUSTOM_DOMAIN,
     });
 
     console.log("✅ Pages domain set successfully");
