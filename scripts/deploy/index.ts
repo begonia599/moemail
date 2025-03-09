@@ -258,6 +258,17 @@ const checkAndCreatePages = async () => {
  */
 const pushPagesSecret = () => {
   console.log("🔐 Pushing environment secrets to Pages...");
+
+  // 定义运行时所需的环境变量列表
+  const runtimeEnvVars = ['AUTH_GITHUB_ID', 'AUTH_GITHUB_SECRET', 'AUTH_SECRET'];
+
+  // 兼容老的部署方式，如果这些环境变量不存在，则说明是老的部署方式，跳过推送
+  for (const varName of runtimeEnvVars) {
+    if (!process.env[varName]) {
+      console.log(`🔐 Skipping pushing secrets to Pages...`);
+      return;
+    }
+  }
   
   try {
     // 确保.env文件存在
@@ -268,9 +279,6 @@ const pushPagesSecret = () => {
     // 创建一个临时文件，只包含运行时所需的环境变量
     const envContent = readFileSync(resolve('.env'), 'utf-8');
     const runtimeEnvFile = resolve('.env.runtime');
-    
-    // 定义运行时所需的环境变量列表
-    const runtimeEnvVars = ['AUTH_GITHUB_ID', 'AUTH_GITHUB_SECRET', 'AUTH_SECRET'];
     
     // 从.env文件中提取运行时变量
     const runtimeEnvContent = envContent
