@@ -17,6 +17,8 @@ const DATABASE_NAME = process.env.DATABASE_NAME || "moemail-db";
 const KV_NAMESPACE_NAME = process.env.KV_NAMESPACE_NAME || "moemail-kv";
 const CUSTOM_DOMAIN = process.env.CUSTOM_DOMAIN;
 
+const KV_NAMESPACE_ID = process.env.KV_NAMESPACE_ID;
+
 /**
  * 验证必要的环境变量
  */
@@ -194,6 +196,12 @@ const migrateDatabase = () => {
  */
 const checkAndCreateKVNamespace = async () => {
   console.log(`🔍 Checking if KV namespace "${KV_NAMESPACE_NAME}" exists...`);
+
+  if (KV_NAMESPACE_ID) {
+    updateKVConfig(KV_NAMESPACE_ID);
+    console.log(`✅ User specified KV namespace (ID: ${KV_NAMESPACE_ID})`);
+    return;
+  }
 
   try {
     let namespace;

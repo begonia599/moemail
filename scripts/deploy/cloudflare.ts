@@ -7,6 +7,7 @@ const CUSTOM_DOMAIN = process.env.CUSTOM_DOMAIN;
 const PROJECT_NAME = process.env.PROJECT_NAME || "moemail";
 const DATABASE_NAME = process.env.DATABASE_NAME || "moemail-db";
 const KV_NAMESPACE_NAME = process.env.KV_NAMESPACE_NAME || "moemail-kv";
+const DATABASE_ID = process.env.DATABASE_ID;
 
 const client = new Cloudflare({
   apiKey: CF_API_TOKEN,
@@ -46,6 +47,12 @@ export const createPages = async () => {
 };
 
 export const getDatabase = async () => {
+  if (DATABASE_ID) {
+    return {
+      uuid: DATABASE_ID,
+    }
+  }
+
   const database = await client.d1.database.get(DATABASE_NAME, {
     account_id: CF_ACCOUNT_ID,
   });
