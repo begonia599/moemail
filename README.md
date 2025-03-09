@@ -87,9 +87,9 @@ pnpm install
 
 3. 设置 wrangler：
 ```bash
-cp wrangler.example.toml wrangler.toml
-cp wrangler.email.example.toml wrangler.email.toml
-cp wrangler.cleanup.example.toml wrangler.cleanup.toml
+cp wrangler.example.json wrangler.json
+cp wrangler.email.example.json wrangler.email.json
+cp wrangler.cleanup.example.json wrangler.cleanup.json
 ```
 设置 Cloudflare D1 数据库名以及数据库 ID
 
@@ -441,17 +441,17 @@ const data = await res.json();
 
 ## 交流
 <table>
-  <tr>
-    <td style="max-width: 360px">
-      <img src="https://pic.otaku.ren/20250309/AQADAcQxGxQjaVZ-.jpg" width="300" />
+  <tr style="max-width: 360px">
+    <td>
+      <img src="https://pic.otaku.ren/20250309/AQADAcQxGxQjaVZ-.jpg" />
     </td>
-    <td style="max-width: 360px">
-      <img src="https://pic.otaku.ren/20250309/AQADCMQxGxQjaVZ-.jpg" width="300" />
+    <td>
+      <img src="https://pic.otaku.ren/20250309/AQADCMQxGxQjaVZ-.jpg" />
     </td>
   </tr>
-  <tr>
+  <tr style="max-width: 360px">
     <td>
-      关注公众号，了解更多项目进展以及AI, 区块链，独立开发资讯
+      关注公众号，了解更多项目进展以及AI，区块链，独立开发资讯
     </td>
     <td>
       添加微信，备注 "MoeMail" 拉你进微信交流群

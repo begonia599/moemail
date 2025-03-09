@@ -1,4 +1,4 @@
-import { integer, sqliteTable, text, primaryKey } from "drizzle-orm/sqlite-core"
+import { integer, sqliteTable, text, primaryKey, uniqueIndex } from "drizzle-orm/sqlite-core"
 import type { AdapterAccountType } from "next-auth/adapters"
 import { relations } from 'drizzle-orm';
 
@@ -96,12 +96,14 @@ export const userRoles = sqliteTable("user_role", {
 export const apiKeys = sqliteTable('api_keys', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   userId: text('user_id').notNull().references(() => users.id),
-  name: text('name').notNull().unique(),
+  name: text('name').notNull(),
   key: text('key').notNull().unique(),
   createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
   expiresAt: integer('expires_at', { mode: 'timestamp' }),
   enabled: integer('enabled', { mode: 'boolean' }).notNull().default(true),
-});
+}, (table) => ({
+  nameUserIdUnique: uniqueIndex('name_user_id_unique').on(table.name, table.userId)
+}));
 
 export const apiKeysRelations = relations(apiKeys, ({ one }) => ({
   user: one(users, {
