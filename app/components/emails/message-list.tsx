@@ -283,7 +283,7 @@ export function MessageList({ email, messageType, onMessageSelect, selectedMessa
         <AlertDialogHeader>
           <AlertDialogTitle>{tList("deleteConfirm")}</AlertDialogTitle>
           <AlertDialogDescription>
-            {tList("deleteDescription", { email: messageToDelete?.subject })}
+            {tList("deleteDescription", { email: messageToDelete?.subject || "" })}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

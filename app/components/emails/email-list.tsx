@@ -241,7 +241,7 @@ export function EmailList({ onEmailSelect, selectedEmailId }: EmailListProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>{t("deleteConfirm")}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t("deleteDescription", { email: emailToDelete?.address })}
+              {t("deleteDescription", { email: emailToDelete?.address || "" })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
