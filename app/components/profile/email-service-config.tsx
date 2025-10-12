@@ -23,7 +23,6 @@ export function EmailServiceConfig() {
   const t = useTranslations("profile.emailService")
   const tCard = useTranslations("profile.card")
   const tSend = useTranslations("emails.send")
-  const tCommon = useTranslations("common.actions")
   const [config, setConfig] = useState<EmailServiceConfig>({
     enabled: false,
     apiKey: "",
