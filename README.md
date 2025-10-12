@@ -52,6 +52,7 @@
 - 🔔 **Webhook 通知**：支持通过 webhook 接收新邮件通知
 - 🛡️ **权限系统**：支持基于角色的权限控制系统
 - 🔑 **OpenAPI**：支持通过 API Key 访问 OpenAPI
+- 🌍 **多语言支持**：支持中文和英文界面，可自由切换
 
 ## 技术栈
 
@@ -64,6 +65,7 @@
 - **邮件处理**: [Cloudflare Email Workers](https://developers.cloudflare.com/email-routing/)
 - **类型安全**: [TypeScript](https://www.typescriptlang.org/)
 - **ORM**: [Drizzle ORM](https://orm.drizzle.team/)
+- **国际化**: [next-intl](https://next-intl-docs.vercel.app/) 支持多语言
 
 ## 本地运行
 

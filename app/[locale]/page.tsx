@@ -3,11 +3,20 @@ import { auth } from "@/lib/auth"
 import { Shield, Mail, Clock } from "lucide-react"
 import { ActionButton } from "@/components/home/action-button"
 import { FeatureCard } from "@/components/home/feature-card"
+import { getTranslations } from "next-intl/server"
+import type { Locale } from "@/i18n/config"
 
 export const runtime = "edge"
 
-export default async function Home() {
+export default async function Home({
+  params,
+}: {
+  params: Promise<{ locale: string }>
+}) {
+  const { locale: localeFromParams } = await params
+  const locale = localeFromParams as Locale
   const session = await auth()
+  const t = await getTranslations({ locale, namespace: "home" })
 
   return (
     <div className="bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 h-screen">
@@ -21,29 +30,29 @@ export default async function Home() {
               <div className="space-y-4">
                 <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-wider">
                   <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-600">
-                    MoeMail
+                    {t("title")}
                   </span>
                 </h1>
                 <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 tracking-wide">
-                  萌萌哒临时邮箱服务
+                  {t("subtitle")}
                 </p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 px-4 sm:px-0">
                 <FeatureCard
                   icon={<Shield className="w-5 h-5" />}
-                  title="隐私保护"
-                  description="保护您的真实邮箱地址"
+                  title={t("features.privacy.title")}
+                  description={t("features.privacy.description")}
                 />
                 <FeatureCard
                   icon={<Mail className="w-5 h-5" />}
-                  title="即时收件"
-                  description="实时接收邮件通知"
+                  title={t("features.instant.title")}
+                  description={t("features.instant.description")}
                 />
                 <FeatureCard
                   icon={<Clock className="w-5 h-5" />}
-                  title="自动过期"
-                  description="到期自动失效"
+                  title={t("features.expiry.title")}
+                  description={t("features.expiry.description")}
                 />
               </div>
 
@@ -57,3 +66,4 @@ export default async function Home() {
     </div>
   )
 }
+

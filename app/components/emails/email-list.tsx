@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useSession } from "next-auth/react"
+import { useTranslations } from "next-intl"
 import { CreateDialog } from "./create-dialog"
 import { Mail, RefreshCw, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -45,6 +46,8 @@ export function EmailList({ onEmailSelect, selectedEmailId }: EmailListProps) {
   const { data: session } = useSession()
   const { config } = useConfig()
   const { role } = useUserRole()
+  const t = useTranslations("emails.list")
+  const tCommon = useTranslations("common.actions")
   const [emails, setEmails] = useState<Email[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -125,7 +128,7 @@ export function EmailList({ onEmailSelect, selectedEmailId }: EmailListProps) {
       if (!response.ok) {
         const data = await response.json()
         toast({
-          title: "错误",
+          title: t("error"),
           description: (data as { error: string }).error,
           variant: "destructive"
         })
@@ -136,8 +139,8 @@ export function EmailList({ onEmailSelect, selectedEmailId }: EmailListProps) {
       setTotal(prev => prev - 1)
 
       toast({
-        title: "成功",
-        description: "邮箱已删除"
+        title: t("success"),
+        description: t("deleteSuccess")
       })
       
       if (selectedEmailId === email.id) {
@@ -145,8 +148,8 @@ export function EmailList({ onEmailSelect, selectedEmailId }: EmailListProps) {
       }
     } catch {
       toast({
-        title: "错误",
-        description: "删除邮箱失败",
+        title: t("error"),
+        description: t("deleteFailed"),
         variant: "destructive"
       })
     } finally {
@@ -172,9 +175,9 @@ export function EmailList({ onEmailSelect, selectedEmailId }: EmailListProps) {
             </Button>
             <span className="text-xs text-gray-500">
               {role === ROLES.EMPEROR ? (
-                `${total}/∞ 个邮箱`
+                t("emailCountUnlimited", { count: total })
               ) : (
-                `${total}/${config?.maxEmails || EMAIL_CONFIG.MAX_ACTIVE_EMAILS} 个邮箱`
+                t("emailCount", { count: total, max: config?.maxEmails || EMAIL_CONFIG.MAX_ACTIVE_EMAILS })
               )}
             </span>
           </div>
@@ -183,7 +186,7 @@ export function EmailList({ onEmailSelect, selectedEmailId }: EmailListProps) {
         
         <div className="flex-1 overflow-auto p-2" onScroll={handleScroll}>
           {loading ? (
-            <div className="text-center text-sm text-gray-500">加载中...</div>
+            <div className="text-center text-sm text-gray-500">{t("loading")}</div>
           ) : emails.length > 0 ? (
             <div className="space-y-1">
               {emails.map(email => (
@@ -200,9 +203,9 @@ export function EmailList({ onEmailSelect, selectedEmailId }: EmailListProps) {
                     <div className="font-medium truncate">{email.address}</div>
                     <div className="text-xs text-gray-500">
                       {new Date(email.expiresAt).getFullYear() === 9999 ? (
-                        "永久有效"
+                        t("permanent")
                       ) : (
-                        `过期时间: ${new Date(email.expiresAt).toLocaleString()}`
+                        `${t("expiresAt")}: ${new Date(email.expiresAt).toLocaleString()}`
                       )}
                     </div>
                   </div>
@@ -221,13 +224,13 @@ export function EmailList({ onEmailSelect, selectedEmailId }: EmailListProps) {
               ))}
               {loadingMore && (
                 <div className="text-center text-sm text-gray-500 py-2">
-                  加载更多...
+                  {t("loadingMore")}
                 </div>
               )}
             </div>
           ) : (
             <div className="text-center text-sm text-gray-500">
-              还没有邮箱，创建一个吧！
+              {t("noEmails")}
             </div>
           )}
         </div>
@@ -236,18 +239,18 @@ export function EmailList({ onEmailSelect, selectedEmailId }: EmailListProps) {
       <AlertDialog open={!!emailToDelete} onOpenChange={() => setEmailToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>确认删除</AlertDialogTitle>
+            <AlertDialogTitle>{t("deleteConfirm")}</AlertDialogTitle>
             <AlertDialogDescription>
-              确定要删除邮箱 {emailToDelete?.address} 吗？此操作将同时删除该邮箱中的所有邮件，且不可恢复。
+              {t("deleteDescription", { email: emailToDelete?.address })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogCancel>{tCommon("cancel")}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive hover:bg-destructive/90"
               onClick={() => emailToDelete && handleDelete(emailToDelete)}
             >
-              删除
+              {tCommon("delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

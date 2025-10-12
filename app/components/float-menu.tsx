@@ -1,5 +1,6 @@
 "use client"
 
+import { useTranslations } from "next-intl"
 import { Github } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -10,6 +11,8 @@ import {
 } from "@/components/ui/tooltip"
 
 export function FloatMenu() {
+  const t = useTranslations("common")
+  
   return (
     <div className="fixed bottom-6 right-6">
       <TooltipProvider>
@@ -24,12 +27,12 @@ export function FloatMenu() {
               <Github 
                 className="w-4 h-4 transition-all duration-300 text-primary group-hover:scale-110"
               />
-              <span className="sr-only">获取网站源代码</span>
+              <span className="sr-only">{t("github")}</span>
             </Button>
           </TooltipTrigger>
           <TooltipContent>
             <div className="text-sm">
-              <p>获取网站源代码</p>
+              <p>{t("github")}</p>
             </div>
           </TooltipContent>
         </Tooltip>

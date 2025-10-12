@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import { useTranslations } from "next-intl"
 import {Mail, Calendar, RefreshCw, Trash2} from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -47,6 +48,9 @@ interface MessageResponse {
 }
 
 export function MessageList({ email, messageType, onMessageSelect, selectedMessageId, refreshTrigger }: MessageListProps) {
+  const t = useTranslations("emails.messages")
+  const tList = useTranslations("emails.list")
+  const tCommon = useTranslations("common.actions")
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -149,7 +153,7 @@ export function MessageList({ email, messageType, onMessageSelect, selectedMessa
       if (!response.ok) {
         const data = await response.json()
         toast({
-          title: "错误",
+          title: tList("error"),
           description: (data as { error: string }).error,
           variant: "destructive"
         })
@@ -160,8 +164,8 @@ export function MessageList({ email, messageType, onMessageSelect, selectedMessa
       setTotal(prev => prev - 1)
 
       toast({
-        title: "成功",
-        description: "邮件已删除"
+        title: tList("success"),
+        description: tList("deleteSuccess")
       })
 
       if (selectedMessageId === message.id) {
@@ -169,8 +173,8 @@ export function MessageList({ email, messageType, onMessageSelect, selectedMessa
       }
     } catch {
       toast({
-        title: "错误",
-        description: "删除邮件失败",
+        title: tList("error"),
+        description: tList("deleteFailed"),
         variant: "destructive"
       })
     } finally {
@@ -215,13 +219,13 @@ export function MessageList({ email, messageType, onMessageSelect, selectedMessa
           <RefreshCw className="h-4 w-4" />
         </Button>
         <span className="text-xs text-gray-500">
-          {total > 0 ? `${total} 封邮件` : "暂无邮件"}
+          {total > 0 ? `${total} ${t("noMessages")}` : t("noMessages")}
         </span>
       </div>
 
       <div className="flex-1 overflow-auto" onScroll={handleScroll}>
         {loading ? (
-          <div className="p-4 text-center text-sm text-gray-500">加载中...</div>
+          <div className="p-4 text-center text-sm text-gray-500">{t("loading")}</div>
         ) : messages.length > 0 ? (
           <div className="divide-y divide-primary/10">
             {messages.map(message => (
@@ -263,13 +267,13 @@ export function MessageList({ email, messageType, onMessageSelect, selectedMessa
             ))}
             {loadingMore && (
               <div className="text-center text-sm text-gray-500 py-2">
-                加载更多...
+                {t("loadingMore")}
               </div>
             )}
           </div>
         ) : (
           <div className="p-4 text-center text-sm text-gray-500">
-            {messageType === 'sent' ? '暂无发送的邮件' : '暂无收到的邮件'}
+            {t("noMessages")}
           </div>
         )}
       </div>
@@ -277,18 +281,18 @@ export function MessageList({ email, messageType, onMessageSelect, selectedMessa
     <AlertDialog open={!!messageToDelete} onOpenChange={() => setMessageToDelete(null)}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>确认删除</AlertDialogTitle>
+          <AlertDialogTitle>{tList("deleteConfirm")}</AlertDialogTitle>
           <AlertDialogDescription>
-            确定要删除邮件 {messageToDelete?.subject} 吗？
+            {tList("deleteDescription", { email: messageToDelete?.subject })}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>取消</AlertDialogCancel>
+          <AlertDialogCancel>{tCommon("cancel")}</AlertDialogCancel>
           <AlertDialogAction
               className="bg-destructive hover:bg-destructive/90"
               onClick={() => messageToDelete && handleDelete(messageToDelete)}
           >
-            删除
+            {tCommon("delete")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

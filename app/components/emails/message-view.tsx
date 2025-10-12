@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import { useTranslations } from "next-intl"
 import { Loader2 } from "lucide-react"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
@@ -28,6 +29,8 @@ interface MessageViewProps {
 type ViewMode = "html" | "text"
 
 export function MessageView({ emailId, messageId, messageType = 'received' }: MessageViewProps) {
+  const t = useTranslations("emails.messageView")
+  const tList = useTranslations("emails.list")
   const [message, setMessage] = useState<Message | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -48,10 +51,10 @@ export function MessageView({ emailId, messageId, messageType = 'received' }: Me
         
         if (!response.ok) {
           const errorData = await response.json()
-          const errorMessage = (errorData as { error?: string }).error || '获取邮件详情失败'
+          const errorMessage = (errorData as { error?: string }).error || t("loadError")
           setError(errorMessage)
           toast({
-            title: "错误",
+            title: tList("error"),
             description: errorMessage,
             variant: "destructive"
           })
@@ -64,10 +67,10 @@ export function MessageView({ emailId, messageId, messageType = 'received' }: Me
           setViewMode("text")
         }
       } catch (error) {
-        const errorMessage = "网络错误，请稍后重试"
+        const errorMessage = t("networkError")
         setError(errorMessage)
         toast({
-          title: "错误", 
+          title: tList("error"), 
           description: errorMessage,
           variant: "destructive"
         })
@@ -78,7 +81,7 @@ export function MessageView({ emailId, messageId, messageType = 'received' }: Me
     }
 
     fetchMessage()
-  }, [emailId, messageId, messageType, toast])
+  }, [emailId, messageId, messageType, toast, t, tList])
 
   const updateIframeContent = () => {
     if (viewMode === "html" && message?.html && iframeRef.current) {
@@ -182,7 +185,7 @@ export function MessageView({ emailId, messageId, messageType = 'received' }: Me
     return (
       <div className="flex items-center justify-center h-32">
         <Loader2 className="w-5 h-5 animate-spin text-primary/60" />
-        <span className="ml-2 text-sm text-gray-500">加载邮件详情...</span>
+        <span className="ml-2 text-sm text-gray-500">{t("loading")}</span>
       </div>
     )
   }
@@ -195,7 +198,7 @@ export function MessageView({ emailId, messageId, messageType = 'received' }: Me
           onClick={() => window.location.reload()} 
           className="text-xs text-primary hover:underline"
         >
-          点击重试
+          {t("retry")}
         </button>
       </div>
     )
@@ -209,12 +212,12 @@ export function MessageView({ emailId, messageId, messageType = 'received' }: Me
         <h3 className="text-base font-bold">{message.subject}</h3>
         <div className="text-xs text-gray-500 space-y-1">
           {message.from_address && (
-            <p>发件人：{message.from_address}</p>
+            <p>{t("from")}: {message.from_address}</p>
           )}
           {message.to_address && (
-            <p>收件人：{message.to_address}</p>
+            <p>{t("to")}: {message.to_address}</p>
           )}
-          <p>时间：{new Date(message.sent_at || message.received_at || 0).toLocaleString()}</p>
+          <p>{t("time")}: {new Date(message.sent_at || message.received_at || 0).toLocaleString()}</p>
         </div>
       </div>
       
@@ -231,7 +234,7 @@ export function MessageView({ emailId, messageId, messageType = 'received' }: Me
                 htmlFor="html" 
                 className="text-xs cursor-pointer"
               >
-                HTML 格式
+                {t("htmlFormat")}
               </Label>
             </div>
             <div className="flex items-center space-x-2">
@@ -240,7 +243,7 @@ export function MessageView({ emailId, messageId, messageType = 'received' }: Me
                 htmlFor="text" 
                 className="text-xs cursor-pointer"
               >
-                纯文本格式
+                {t("textFormat")}
               </Label>
             </div>
           </RadioGroup>

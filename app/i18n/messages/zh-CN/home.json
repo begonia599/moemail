@@ -1,0 +1,23 @@
+{
+  "title": "MoeMail",
+  "subtitle": "萌萌哒临时邮箱服务",
+  "features": {
+    "privacy": {
+      "title": "隐私保护",
+      "description": "保护您的真实邮箱地址"
+    },
+    "instant": {
+      "title": "即时收件",
+      "description": "实时接收邮件通知"
+    },
+    "expiry": {
+      "title": "自动过期",
+      "description": "到期自动失效"
+    }
+  },
+  "actions": {
+    "enterMailbox": "进入邮箱",
+    "getStarted": "开始使用"
+  }
+}
+
