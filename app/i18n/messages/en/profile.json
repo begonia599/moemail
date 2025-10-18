@@ -35,6 +35,12 @@
       "getEmails": "Get Email List",
       "getMessages": "Get Message List",
       "getMessage": "Get Single Message",
+      "createEmailShare": "Create Email Share Link",
+      "getEmailShares": "Get Email Share Links",
+      "deleteEmailShare": "Delete Email Share Link",
+      "createMessageShare": "Create Message Share Link",
+      "getMessageShares": "Get Message Share Links",
+      "deleteMessageShare": "Delete Message Share Link",
       "notes": "Notes:",
       "note1": "Replace YOUR_API_KEY with your actual API Key",
       "note2": "/api/config endpoint provides system configuration including available email domains",
@@ -43,7 +49,9 @@
       "note5": "expiryTime is the validity period in milliseconds: 3600000 (1 hour), 86400000 (1 day), 604800000 (7 days), 0 (permanent)",
       "note6": "domain is the email domain, get available domains from /api/config endpoint",
       "note7": "cursor is for pagination, get nextCursor from previous response",
-      "note8": "All requests require X-API-Key header"
+      "note8": "All requests require X-API-Key header",
+      "note9": "expiresIn is the share link validity period in milliseconds, 0 means permanent",
+      "note10": "shareId is the unique identifier for a share record"
     }
   },
   "emailService": {

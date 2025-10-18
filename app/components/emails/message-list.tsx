@@ -2,12 +2,13 @@
 
 import { useState, useEffect, useRef } from "react"
 import { useTranslations } from "next-intl"
-import {Mail, Calendar, RefreshCw, Trash2} from "lucide-react"
+import {Mail, Calendar, RefreshCw, Trash2, Share2} from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { useThrottle } from "@/hooks/use-throttle"
 import { EMAIL_CONFIG } from "@/config"
 import { useToast } from "@/components/ui/use-toast"
+import { ShareMessageDialog } from "./share-message-dialog"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -219,7 +220,7 @@ export function MessageList({ email, messageType, onMessageSelect, selectedMessa
           <RefreshCw className="h-4 w-4" />
         </Button>
         <span className="text-xs text-gray-500">
-          {total > 0 ? `${total} ${t("noMessages")}` : t("noMessages")}
+          {total > 0 ? `${total} ${t("messageCount")}` : t("noMessages")}
         </span>
       </div>
 
@@ -251,17 +252,33 @@ export function MessageList({ email, messageType, onMessageSelect, selectedMessa
                       </span>
                     </div>
                   </div>
-                  <Button
+                  <div className="opacity-0 group-hover:opacity-100 flex gap-1" onClick={(e) => e.stopPropagation()}>
+                    <ShareMessageDialog
+                      emailId={email.id}
+                      messageId={message.id}
+                      messageSubject={message.subject}
+                      trigger={
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                        >
+                          <Share2 className="h-4 w-4" />
+                        </Button>
+                      }
+                    />
+                    <Button
                       variant="ghost"
                       size="icon"
-                      className="opacity-0 group-hover:opacity-100 h-8 w-8"
+                      className="h-8 w-8"
                       onClick={(e) => {
                         e.stopPropagation()
                         setMessageToDelete(message)
                       }}
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             ))}

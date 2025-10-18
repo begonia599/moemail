@@ -1,6 +1,6 @@
 import { Header } from "@/components/layout/header"
 import { auth } from "@/lib/auth"
-import { Shield, Mail, Clock } from "lucide-react"
+import { Shield, Share2, Clock, Code2 } from "lucide-react"
 import { ActionButton } from "@/components/home/action-button"
 import { FeatureCard } from "@/components/home/feature-card"
 import { getTranslations } from "next-intl/server"
@@ -38,14 +38,14 @@ export default async function Home({
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 px-4 sm:px-0">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 px-4 sm:px-0">
                 <FeatureCard
                   icon={<Shield className="w-5 h-5" />}
                   title={t("features.privacy.title")}
                   description={t("features.privacy.description")}
                 />
                 <FeatureCard
-                  icon={<Mail className="w-5 h-5" />}
+                  icon={<Share2 className="w-5 h-5" />}
                   title={t("features.instant.title")}
                   description={t("features.instant.description")}
                 />
@@ -53,6 +53,11 @@ export default async function Home({
                   icon={<Clock className="w-5 h-5" />}
                   title={t("features.expiry.title")}
                   description={t("features.expiry.description")}
+                />
+                <FeatureCard
+                  icon={<Code2 className="w-5 h-5" />}
+                  title={t("features.openapi.title")}
+                  description={t("features.openapi.description")}
                 />
               </div>
 
