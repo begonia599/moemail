@@ -265,7 +265,7 @@ export function ShareMessageDialog({ emailId, messageId, messageSubject, trigger
                               }
                             }}
                             className={cn(
-                              "flex-1 text-xs p-1 rounded truncate font-mono transition-colors",
+                              "flex-1 text-xs p-1 rounded font-mono transition-colors break-all",
                               isExpired
                                 ? "bg-destructive/10 text-destructive/70 cursor-not-allowed pointer-events-none"
                                 : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary cursor-pointer"
@@ -290,7 +290,7 @@ export function ShareMessageDialog({ emailId, messageId, messageSubject, trigger
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
                         </div>
-                        <div className="flex gap-4 text-xs">
+                        <div className="flex gap-y-4 gap-x-2 sm:gap-x-4 text-xs">
                           <span className={cn(
                             isExpired ? "text-destructive/70" : "text-gray-500"
                           )}>

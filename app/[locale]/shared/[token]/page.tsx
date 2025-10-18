@@ -13,10 +13,10 @@ interface PageProps {
 export default async function SharedEmailPage({ params }: PageProps) {
   const { token } = await params
   const tShared = await getTranslations("emails.shared")
-  
+
   // 服务端获取数据
   const email = await getSharedEmail(token)
-  
+
   if (!email) {
     return (
       <SharedErrorPage
@@ -33,17 +33,9 @@ export default async function SharedEmailPage({ params }: PageProps) {
   const messagesResult = await getSharedEmailMessages(token)
 
   return (
-    <SharedEmailPageClient 
-      email={{
-        ...email,
-        createdAt: email.createdAt.toISOString(),
-        expiresAt: email.expiresAt.toISOString()
-      }}
-      initialMessages={messagesResult.messages.map(msg => ({
-        ...msg,
-        received_at: msg.received_at?.toISOString(),
-        sent_at: msg.sent_at?.toISOString()
-      }))}
+    <SharedEmailPageClient
+      email={email}
+      initialMessages={messagesResult.messages}
       initialNextCursor={messagesResult.nextCursor}
       initialTotal={messagesResult.total}
       token={token}

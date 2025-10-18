@@ -11,8 +11,8 @@ import { EMAIL_CONFIG } from "@/config"
 interface Email {
   id: string
   address: string
-  createdAt: string
-  expiresAt: string
+  createdAt: Date
+  expiresAt: Date
 }
 
 interface Message {
@@ -20,8 +20,8 @@ interface Message {
   from_address?: string
   to_address?: string
   subject: string
-  received_at?: string
-  sent_at?: string
+  received_at?: Date
+  sent_at?: Date
 }
 
 interface MessageDetail extends Message {
@@ -37,16 +37,16 @@ interface SharedEmailPageClientProps {
   token: string
 }
 
-export function SharedEmailPageClient({ 
-  email, 
-  initialMessages, 
+export function SharedEmailPageClient({
+  email,
+  initialMessages,
   initialNextCursor,
   initialTotal,
-  token 
+  token
 }: SharedEmailPageClientProps) {
   const t = useTranslations("emails")
   const tShared = useTranslations("emails.shared")
-  
+
   const [messages, setMessages] = useState<Message[]>(initialMessages)
   const [selectedMessage, setSelectedMessage] = useState<MessageDetail | null>(null)
   const [messageLoading, setMessageLoading] = useState(false)
@@ -75,12 +75,12 @@ export function SharedEmailPageClient({
 
       const messagesResponse = await fetch(url)
       if (messagesResponse.ok) {
-        const messagesData = await messagesResponse.json() as { 
+        const messagesData = await messagesResponse.json() as {
           messages: Message[]
           nextCursor: string | null
           total: number
         }
-        
+
         if (!cursor) {
           // 刷新时：合并新消息和旧消息，避免重复
           const newMessages = messagesData.messages
@@ -144,7 +144,7 @@ export function SharedEmailPageClient({
     return () => {
       stopPolling()
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token])
 
   const handleLoadMore = () => {
@@ -156,13 +156,13 @@ export function SharedEmailPageClient({
   const fetchMessageDetail = async (messageId: string) => {
     try {
       setMessageLoading(true)
-      
+
       const response = await fetch(`/api/shared/${token}/messages/${messageId}`)
-      
+
       if (!response.ok) {
         throw new Error("Failed to load message")
       }
-      
+
       const data = await response.json() as { message: MessageDetail }
       setSelectedMessage(data.message)
     } catch (err) {
@@ -175,23 +175,47 @@ export function SharedEmailPageClient({
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="container mx-auto p-4 max-w-7xl">
-        <BrandHeader 
+        <BrandHeader
           title={email.address}
-          subtitle={new Date(email.expiresAt).getFullYear() === 9999
-            ? tShared("permanent")
-            : `${tShared("expiresAt")}: ${new Date(email.expiresAt).toLocaleDateString()} ${new Date(email.expiresAt).toLocaleTimeString()}`}
+          subtitle={(() => {
+            try {
+              const expiresDate = new Date(email.expiresAt)
+              if (isNaN(expiresDate.getTime())) return tShared("sharedMailbox")
+              return expiresDate.getFullYear() === 9999
+                ? tShared("permanent")
+                : `${tShared("expiresAt")}: ${expiresDate.toLocaleDateString()} ${expiresDate.toLocaleTimeString()}`
+            } catch {
+              return tShared("sharedMailbox")
+            }
+          })()}
           showCta={true}
           ctaText={tShared("createOwnEmail")}
         />
-        
+
         {/* 桌面端双栏布局 */}
         <div className="hidden lg:grid grid-cols-2 gap-4 h-[calc(100vh-280px)] mt-6">
           <div className="border-2 border-primary/20 bg-background rounded-lg overflow-hidden">
             <SharedMessageList
               messages={messages.map(msg => ({
                 ...msg,
-                received_at: msg.received_at ? new Date(msg.received_at as string).getTime() : undefined,
-                sent_at: msg.sent_at ? new Date(msg.sent_at as string).getTime() : undefined
+                received_at: (() => {
+                  if (!msg.received_at) return undefined
+                  try {
+                    const date = new Date(msg.received_at)
+                    return isNaN(date.getTime()) ? undefined : date.getTime()
+                  } catch {
+                    return undefined
+                  }
+                })(),
+                sent_at: (() => {
+                  if (!msg.sent_at) return undefined
+                  try {
+                    const date = new Date(msg.sent_at)
+                    return isNaN(date.getTime()) ? undefined : date.getTime()
+                  } catch {
+                    return undefined
+                  }
+                })()
               }))}
               selectedMessageId={selectedMessage?.id}
               onMessageSelect={fetchMessageDetail}
@@ -216,8 +240,24 @@ export function SharedEmailPageClient({
             <SharedMessageDetail
               message={selectedMessage ? {
                 ...selectedMessage,
-                received_at: selectedMessage.received_at ? new Date(selectedMessage.received_at as string).getTime() : undefined,
-                sent_at: selectedMessage.sent_at ? new Date(selectedMessage.sent_at as string).getTime() : undefined
+                received_at: (() => {
+                  if (!selectedMessage.received_at) return undefined
+                  try {
+                    const date = new Date(selectedMessage.received_at)
+                    return isNaN(date.getTime()) ? undefined : date.getTime()
+                  } catch {
+                    return undefined
+                  }
+                })(),
+                sent_at: (() => {
+                  if (!selectedMessage.sent_at) return undefined
+                  try {
+                    const date = new Date(selectedMessage.sent_at)
+                    return isNaN(date.getTime()) ? undefined : date.getTime()
+                  } catch {
+                    return undefined
+                  }
+                })()
               } : null}
               loading={messageLoading}
               t={{
@@ -243,8 +283,24 @@ export function SharedEmailPageClient({
               <SharedMessageList
                 messages={messages.map(msg => ({
                   ...msg,
-                  received_at: msg.received_at ? new Date(msg.received_at as string).getTime() : undefined,
-                  sent_at: msg.sent_at ? new Date(msg.sent_at as string).getTime() : undefined
+                  received_at: (() => {
+                    if (!msg.received_at) return undefined
+                    try {
+                      const date = new Date(msg.received_at)
+                      return isNaN(date.getTime()) ? undefined : date.getTime()
+                    } catch {
+                      return undefined
+                    }
+                  })(),
+                  sent_at: (() => {
+                    if (!msg.sent_at) return undefined
+                    try {
+                      const date = new Date(msg.sent_at)
+                      return isNaN(date.getTime()) ? undefined : date.getTime()
+                    } catch {
+                      return undefined
+                    }
+                  })()
                 }))}
                 selectedMessageId={null}
                 onMessageSelect={fetchMessageDetail}
@@ -279,8 +335,24 @@ export function SharedEmailPageClient({
                   <SharedMessageDetail
                     message={{
                       ...selectedMessage,
-                      received_at: selectedMessage.received_at ? new Date(selectedMessage.received_at as string).getTime() : undefined,
-                      sent_at: selectedMessage.sent_at ? new Date(selectedMessage.sent_at as string).getTime() : undefined
+                      received_at: (() => {
+                        if (!selectedMessage.received_at) return undefined
+                        try {
+                          const date = new Date(selectedMessage.received_at)
+                          return isNaN(date.getTime()) ? undefined : date.getTime()
+                        } catch {
+                          return undefined
+                        }
+                      })(),
+                      sent_at: (() => {
+                        if (!selectedMessage.sent_at) return undefined
+                        try {
+                          const date = new Date(selectedMessage.sent_at)
+                          return isNaN(date.getTime()) ? undefined : date.getTime()
+                        } catch {
+                          return undefined
+                        }
+                      })()
                     }}
                     loading={messageLoading}
                     t={{
@@ -301,7 +373,7 @@ export function SharedEmailPageClient({
           </div>
         </div>
       </div>
-      
+
       <FloatingLanguageSwitcher />
     </div>
   )
