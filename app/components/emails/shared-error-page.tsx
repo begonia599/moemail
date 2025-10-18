@@ -3,7 +3,7 @@
 import { AlertCircle } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { BrandHeader } from "@/components/ui/brand-header"
-import { LanguageSwitcher } from "@/components/layout/language-switcher"
+import { FloatingLanguageSwitcher } from "@/components/layout/floating-language-switcher"
 
 interface SharedErrorPageProps {
   title: string
@@ -17,10 +17,7 @@ export function SharedErrorPage({ title, subtitle, error, description, ctaText }
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="container mx-auto p-4 max-w-4xl">
-        <div className="flex justify-end mb-4">
-          <LanguageSwitcher />
-        </div>
-        <BrandHeader 
+        <BrandHeader
           title={title}
           subtitle={subtitle}
           showCta={true}
@@ -36,6 +33,8 @@ export function SharedErrorPage({ title, subtitle, error, description, ctaText }
           </Card>
         </div>
       </div>
+
+      <FloatingLanguageSwitcher />
     </div>
   )
 }
