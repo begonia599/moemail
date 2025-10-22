@@ -107,6 +107,15 @@
     "adminContact": "管理者連絡先",
     "adminContactPlaceholder": "メールまたはその他の連絡先",
     "maxEmails": "ユーザーあたりの最大メールボックス数",
+    "turnstile": {
+      "enable": "Cloudflare Turnstile を有効化",
+      "enableDescription": "有効にすると、ユーザー名とパスワードでのログイン・登録に Turnstile 認証が必要になります",
+      "siteKey": "Site Key",
+      "siteKeyPlaceholder": "Turnstile Site Key を入力",
+      "secretKey": "Secret Key",
+      "secretKeyPlaceholder": "Turnstile Secret Key を入力",
+      "secretKeyDescription": "Cloudflare で Turnstile を作成し、必須のキーを入力してから有効化してください"
+    },
     "save": "設定を保存",
     "saving": "保存中...",
     "saveSuccess": "設定を保存しました",
@@ -128,4 +137,3 @@
     "updateFailed": "ユーザーロールの更新に失敗しました"
   }
 }
-

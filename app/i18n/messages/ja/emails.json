@@ -3,7 +3,9 @@
     "title": "権限がありません",
     "description": "このページにアクセスする権限がありません。サイト管理者に連絡してください",
     "adminContact": "管理者の連絡先",
-    "backToHome": "ホームに戻る"
+    "backToHome": "ホームに戻る",
+    "needPermission": "需要公爵或更高权限才能管理 API Key",
+    "contactAdmin": "请联系网站管理员升级您的角色"
   },
   "layout": {
     "myEmails": "マイメールボックス",
@@ -165,4 +167,3 @@
     }
   }
 }
-

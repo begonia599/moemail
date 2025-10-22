@@ -107,6 +107,15 @@
     "adminContact": "管理員聯絡方式",
     "adminContactPlaceholder": "郵箱或其他聯絡方式",
     "maxEmails": "每個使用者最大郵箱數",
+    "turnstile": {
+      "enable": "啟用 Cloudflare Turnstile",
+      "enableDescription": "啟用後，使用者名稱與密碼的登入／註冊需要通過 Turnstile 驗證",
+      "siteKey": "Site Key",
+      "siteKeyPlaceholder": "輸入 Turnstile Site Key",
+      "secretKey": "Secret Key",
+      "secretKeyPlaceholder": "輸入 Turnstile Secret Key",
+      "secretKeyDescription": "請先在 Cloudflare 建立 Turnstile 並填寫上述必填參數後再啟用"
+    },
     "save": "儲存設定",
     "saving": "儲存中...",
     "saveSuccess": "設定儲存成功",
@@ -128,4 +137,3 @@
     "updateFailed": "更新使用者角色失敗"
   }
 }
-
