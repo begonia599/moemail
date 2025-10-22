@@ -32,11 +32,11 @@ export async function GET() {
     emailDomains: emailDomains || "moemail.app",
     adminContact: adminContact || "",
     maxEmails: maxEmails || EMAIL_CONFIG.MAX_ACTIVE_EMAILS.toString(),
-    turnstile: {
+    turnstile: canManageConfig ? {
       enabled: turnstileEnabled === "true",
       siteKey: turnstileSiteKey || "",
-      ...(canManageConfig ? { secretKey: turnstileSecretKey || "" } : {})
-    }
+      secretKey: turnstileSecretKey || "",
+    } : undefined
   })
 }
 
