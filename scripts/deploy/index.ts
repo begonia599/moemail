@@ -280,14 +280,6 @@ const pushPagesSecret = () => {
   // 定义运行时所需的环境变量列表
   const runtimeEnvVars = ['AUTH_GITHUB_ID', 'AUTH_GITHUB_SECRET', 'AUTH_GOOGLE_ID', 'AUTH_GOOGLE_SECRET', 'AUTH_SECRET'];
 
-  // 兼容老的部署方式，如果这些环境变量不存在，则说明是老的部署方式，跳过推送
-  for (const varName of runtimeEnvVars) {
-    if (!process.env[varName]) {
-      console.log(`🔐 Skipping pushing secrets to Pages...`);
-      return;
-    }
-  }
-
   try {
     // 确保.env文件存在
     if (!existsSync(resolve('.env'))) {
@@ -309,7 +301,8 @@ const pushPagesSecret = () => {
         // 检查是否为运行时所需的环境变量
         for (const varName of runtimeEnvVars) {
           if (line.startsWith(`${varName} =`) || line.startsWith(`${varName}=`)) {
-            return true;
+            const value = line.substring(line.indexOf('=') + 1).trim().replace(/^["']|["']$/g, '');
+            return value.length > 0;
           }
         }
         return false;
