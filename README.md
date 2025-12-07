@@ -8,6 +8,11 @@
 </p>
 
 <p align="center">
+  <a href="./README.md">简体中文</a>
+  <a href="./README.en.md">English</a> | 
+</p>
+
+<p align="center">
   <a href="#在线演示">在线演示</a> •
   <a href="#文档">文档</a> •
   <a href="#特性">特性</a> •
