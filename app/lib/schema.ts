@@ -1,6 +1,6 @@
 import { integer, sqliteTable, text, primaryKey, uniqueIndex, index } from "drizzle-orm/sqlite-core"
 import type { AdapterAccountType } from "next-auth/adapters"
-import { relations } from 'drizzle-orm';
+import { relations, sql } from 'drizzle-orm';
 
 // https://authjs.dev/getting-started/adapters/drizzle
 export const users = sqliteTable("user", {
@@ -50,6 +50,7 @@ export const emails = sqliteTable("email", {
 }, (table) => ({
   expiresAtIdx: index("email_expires_at_idx").on(table.expiresAt),
   userIdIdx: index("email_user_id_idx").on(table.userId),
+  addressLowerIdx: index("email_address_lower_idx").on(sql`LOWER(${table.address})`),
 }))
 
 export const messages = sqliteTable("message", {
