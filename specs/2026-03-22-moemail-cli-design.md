@@ -4,7 +4,9 @@
 
 A CLI tool that wraps MoeMail's existing OpenAPI, optimized for AI Agent workflows. Agents can create temporary emails, wait for incoming messages, read content, and manage mailboxes through simple shell commands.
 
-**Goal:** Make MoeMail a first-class tool in any AI Agent's toolchain with minimal friction — one command per action, structured JSON output, zero server-side changes.
+**Goal:** Make MoeMail a first-class tool in any AI Agent's toolchain with minimal friction — one command per action, structured JSON output, minimal server-side changes.
+
+**Server-side changes:** One small change required — the `POST /api/emails/{id}/send` endpoint currently uses session-only auth. It needs to be updated to also support API Key auth (switch from `auth()` to `getUserId()`) so the CLI `send` command works.
 
 ## Architecture
 
@@ -13,7 +15,7 @@ Agent (Claude / GPT / Custom)
     ↓ shell call
 moemail CLI (npm package, bun-built single JS file)
     ↓ HTTPS + X-API-Key header
-MoeMail Server (existing Next.js API, no changes)
+MoeMail Server (existing Next.js API, one minor auth change for send endpoint)
     ↓
 Cloudflare D1 / Email Workers
 ```
@@ -23,7 +25,7 @@ Cloudflare D1 / Email Workers
 - **Distribution:** npm package, `npm i -g moemail-cli`
 - **Binary:** `package.json` `bin` field points to `dist/index.js`
 - **Location:** `packages/moemail-cli/` in the monorepo
-- **Server changes:** None. CLI is a pure API client.
+- **Server changes:** One change — update send endpoint to support API Key auth.
 
 ## Configuration
 
@@ -42,7 +44,9 @@ Environment variable overrides (higher priority):
 
 ## Commands
 
-All commands support `--json` for JSON output and `--help` for usage info.
+All commands support `--json` for JSON output, `--help` for usage info, and `moemail --version` for version.
+
+**Field naming convention:** CLI JSON output uses camelCase (`messageId`, `receivedAt`, `fromAddress`). The API uses snake_case (`message_id`, `received_at`, `from_address`). The CLI transforms all field names to camelCase, and converts epoch ms timestamps to ISO 8601 strings.
 
 ### `moemail config`
 
@@ -68,7 +72,14 @@ moemail create
 moemail create --name test --domain moemail.app --expiry 24h
 ```
 
-`--expiry` options: `1h` | `24h` | `3d` | `7d` | `permanent`
+`--expiry` options and API mapping:
+
+| CLI flag | API `expiryTime` (ms) |
+|----------|----------------------|
+| `1h` | `3600000` |
+| `24h` | `86400000` |
+| `3d` | `259200000` |
+| `permanent` | `0` |
 
 Default output:
 ```
@@ -81,14 +92,29 @@ JSON output (`--json`):
 {"id": "abc-123", "address": "test@moemail.app", "expiresAt": "2026-03-23T12:00:00Z"}
 ```
 
+Note: The API returns `{ id, email }`. The CLI renames `email` → `address` for clarity, and computes `expiresAt` from the chosen expiry option.
+
 ### `moemail list`
 
 ```bash
 # List all mailboxes
 moemail list
 
+# List messages in a mailbox
+moemail list --email-id xxx
+
 # With pagination
 moemail list --cursor xxx
+```
+
+JSON output — mailboxes (`--json`):
+```json
+{"emails": [{"id": "abc-123", "address": "test@moemail.app", "expiresAt": "..."}], "nextCursor": "xxx", "total": 5}
+```
+
+JSON output — messages (`--json --email-id xxx`):
+```json
+{"messages": [{"id": "msg-1", "from": "sender@example.com", "subject": "Hello", "receivedAt": "..."}], "nextCursor": null, "total": 2}
 ```
 
 ### `moemail wait`
@@ -103,10 +129,12 @@ moemail wait --email-id xxx
 moemail wait --email-id xxx --timeout 60 --interval 3
 ```
 
+**Parameters:** `--timeout` and `--interval` are in seconds.
+
 **Behavior:**
-1. Record current message count/IDs on start
+1. Fetch current message list, record all existing message IDs in a Set
 2. Poll `GET /api/emails/{id}` every `--interval` seconds
-3. Compare with initial state to detect new messages
+3. Compare returned message IDs against the initial Set to detect new messages (ID-based, not count-based — safe against concurrent deletes)
 4. On new message: output message summary and exit with code 0
 5. On timeout: exit with code 1
 
@@ -134,10 +162,20 @@ moemail read --email-id xxx --message-id yyy --format html
 
 `--format` options: `text` (default) | `html`
 
+JSON output (`--json`):
+```json
+{"id": "msg-456", "from": "no-reply@github.com", "to": "test@moemail.app", "subject": "Verify your email", "content": "Your code is 123456", "html": "<p>Your code is 123456</p>", "receivedAt": "2026-03-22T12:05:00Z", "type": "received"}
+```
+
 ### `moemail send`
 
 ```bash
 moemail send --email-id xxx --to user@example.com --subject "Hello" --content "Body text"
+```
+
+JSON output (`--json`):
+```json
+{"success": true, "remainingEmails": 4}
 ```
 
 ### `moemail delete`
@@ -148,6 +186,11 @@ moemail delete --email-id xxx
 
 # Delete single message
 moemail delete --email-id xxx --message-id yyy
+```
+
+JSON output (`--json`):
+```json
+{"success": true}
 ```
 
 ## Output Specification
@@ -213,7 +256,7 @@ packages/moemail-cli/
 - Lives in `packages/moemail-cli/`, published as a separate npm package
 - No code shared with the main Next.js app
 - Only coupling is the API contract (URLs, request/response shapes)
-- Server-side: zero changes required
+- Server-side: one change — send endpoint auth support for API Key
 
 ## Typical Agent Workflow
 
