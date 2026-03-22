@@ -1,5 +1,5 @@
 {
-  "name": "moemail-cli",
+  "name": "@moemail/cli",
   "version": "0.1.0",
   "description": "Agent-first CLI for MoeMail temporary email service",
   "type": "module",
