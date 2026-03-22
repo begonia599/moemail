@@ -5,7 +5,7 @@ Agent-first CLI for MoeMail temporary email service
 ## Install
 
 ```bash
-npm i -g moemail-cli
+npm i -g @moemail/cli
 ```
 
 ## Quick Start
