@@ -24,7 +24,7 @@ Cloudflare D1 / Email Workers
 - **Build:** `bun build ./src/index.ts --outdir ./dist --target=node`
 - **Distribution:** npm package, `npm i -g moemail-cli`
 - **Binary:** `package.json` `bin` field points to `dist/index.js`
-- **Location:** `packages/moemail-cli/` in the monorepo
+- **Location:** `packages/cli/` in the monorepo
 - **Server changes:** One change — update send endpoint to support API Key auth.
 
 ## Configuration
@@ -227,7 +227,7 @@ $ moemail wait --email-id xxx --timeout 10 --json
 ## Project Structure
 
 ```
-packages/moemail-cli/
+packages/cli/
 ├── src/
 │   ├── index.ts          # Entry point, command registration
 │   ├── commands/
@@ -253,10 +253,130 @@ packages/moemail-cli/
 
 ## Relationship to Main Project
 
-- Lives in `packages/moemail-cli/`, published as a separate npm package
+- Lives in `packages/cli/`, published as a separate npm package
 - No code shared with the main Next.js app
 - Only coupling is the API contract (URLs, request/response shapes)
 - Server-side: one change — send endpoint auth support for API Key
+
+## CI/CD Publishing
+
+CLI 通过独立的 GitHub Actions workflow 发布到 npm，与主项目的 deploy workflow 分开。
+
+### Workflow: `.github/workflows/publish-cli.yml`
+
+**触发条件：**
+- Push tag 匹配 `cli-v*`（如 `cli-v1.0.0`），与主项目的 `v*` tag 区分
+
+**流程：**
+1. Checkout 代码
+2. Setup pnpm + Node.js 20
+3. Install dependencies（`pnpm install --frozen-lockfile`）
+4. Build CLI（`cd packages/cli && bun build ./src/index.ts --outdir ./dist --target=node`）
+5. Publish to npm（`cd packages/cli && npm publish --access public`）
+
+**所需 Secrets：**
+- `NPM_TOKEN`：npm publish token，在 GitHub repo Settings → Secrets 中配置
+
+### 发布步骤
+
+```bash
+# 1. 更新 packages/cli/package.json 中的 version
+# 2. Commit & push
+# 3. 打 tag 并推送
+git tag cli-v1.0.0
+git push origin cli-v1.0.0
+```
+
+### 版本策略
+
+CLI 独立版本号，不与主项目同步。遵循 semver：
+- **patch**：bug fix
+- **minor**：新增命令或 flag
+- **major**：破坏性变更（命令重命名、输出格式变更）
+
+## Agent Discoverability
+
+三层机制让 AI Agent 知道如何使用 CLI。
+
+### 1. CLI 内置 Help
+
+Commander 自动生成，Agent 调用一次即可获取完整用法：
+
+```bash
+$ moemail --help
+Usage: moemail [options] [command]
+
+MoeMail CLI — Agent-friendly temporary email tool
+
+Options:
+  -V, --version       output the version number
+  --json              output as JSON
+  -h, --help          display help for command
+
+Commands:
+  config              configure API endpoint and API Key
+  create [options]    create a temporary email address
+  list [options]      list mailboxes or messages
+  wait [options]      wait for a new email to arrive
+  read [options]      read an email message
+  send [options]      send an email from a temporary address
+  delete [options]    delete a mailbox or message
+
+$ moemail create --help
+Usage: moemail create [options]
+
+Create a temporary email address
+
+Options:
+  --name <name>       email prefix (default: random)
+  --domain <domain>   email domain
+  --expiry <expiry>   1h | 24h | 3d | permanent (default: "1h")
+  --json              output as JSON
+  -h, --help          display help for command
+```
+
+### 2. README 文档
+
+`packages/cli/README.md` 作为 npm 包首页展示，包含：
+- 一句话介绍：Agent-first CLI for MoeMail temporary email service
+- 安装命令
+- 快速开始（3 步：config → create → wait）
+- 完整命令参考表
+- Agent workflow 示例
+- JSON 输出格式说明
+
+### 3. llms.txt
+
+在 MoeMail 站点根目录提供 `https://moemail.app/llms.txt`，遵循 llms.txt 协议。Agent 访问网站时自动发现可用工具。
+
+```
+# MoeMail
+
+> Temporary email service with CLI tool for AI Agents
+
+MoeMail provides disposable email addresses. Install the CLI for programmatic access:
+
+## CLI Tool
+
+Install: npm i -g moemail-cli
+
+Setup: moemail config set api-url https://moemail.app && moemail config set api-key YOUR_KEY
+
+Commands:
+- moemail create --domain <domain> --expiry <1h|24h|3d|permanent> --json
+- moemail list --json
+- moemail list --email-id <id> --json
+- moemail wait --email-id <id> --timeout <seconds> --json
+- moemail read --email-id <id> --message-id <id> --json
+- moemail send --email-id <id> --to <addr> --subject <subj> --content <body> --json
+- moemail delete --email-id <id> --json
+
+Typical workflow: create email → use address for signup → wait for verification → read content → extract code → delete
+
+All commands support --json for structured output. Exit code 0 = success, 1 = failure, 2 = auth error.
+```
+
+**实现方式：** 在 Next.js 的 `public/` 目录下放置 `llms.txt` 静态文件，部署时自动可访问。
 
 ## Typical Agent Workflow
 
