@@ -27,8 +27,8 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Install CLI dependencies
+        run: cd packages/cli && pnpm install
 
       - name: Build
         run: cd packages/cli && bun build ./src/index.ts --outdir ./dist --target=node
