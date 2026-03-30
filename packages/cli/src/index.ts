@@ -7,6 +7,7 @@ import { registerWaitCommand } from "./commands/wait.js";
 import { registerReadCommand } from "./commands/read.js";
 import { registerDeleteCommand } from "./commands/delete.js";
 import { registerSendCommand } from "./commands/send.js";
+import { registerSkillCommand } from "./commands/skill.js";
 
 const program = new Command();
 
@@ -23,5 +24,6 @@ registerWaitCommand(program);
 registerReadCommand(program);
 registerDeleteCommand(program);
 registerSendCommand(program);
+registerSkillCommand(program);
 
 program.parse();

@@ -36,6 +36,7 @@ moemail wait --email-id <email_id> --timeout 120
 | `read` | Read email message content | `--email-id <id>`, `--message-id <id>`, `--json` |
 | `send` | Send email from temporary address | `--email-id <id>`, `--to <address>`, `--subject <text>`, `--body <text>`, `--json` |
 | `delete` | Delete temporary email | `--email-id <id>` |
+| `skill install` | Install AI agent skill | `--platform <claude\|codex\|all>` |
 
 ## Agent Workflow Example
 
@@ -61,6 +62,24 @@ CONTENT=$(moemail read --email-id $EMAIL_ID --message-id $MSG_ID --json)
 # Cleanup
 moemail delete --email-id $EMAIL_ID
 ```
+
+## AI Agent Skill
+
+The CLI ships with a built-in skill file that teaches AI agents how to use MoeMail. Install it to your agent platform:
+
+```bash
+# Auto-detect installed platforms (Claude Code, Codex)
+moemail skill install
+
+# Install to a specific platform
+moemail skill install --platform claude
+moemail skill install --platform codex
+
+# Install to all supported platforms (skip detection)
+moemail skill install --platform all
+```
+
+After installation, AI agents will automatically know how to create temporary emails, wait for messages, and read content using the MoeMail CLI.
 
 ## JSON Output
 

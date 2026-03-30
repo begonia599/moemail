@@ -10,7 +10,7 @@
     "build": "bun build ./src/index.ts --outdir ./dist --target=node",
     "dev": "bun run ./src/index.ts"
   },
-  "files": ["dist"],
+  "files": ["dist", "skill"],
   "keywords": ["email", "temporary", "cli", "agent", "ai"],
   "license": "MIT",
   "dependencies": {

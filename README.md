@@ -583,6 +583,19 @@ MSG_ID=$(echo $MSG | jq -r '.messageId')
 CONTENT=$(moemail read --email-id $EMAIL_ID --message-id $MSG_ID --json)
 ```
 
+### AI Agent Skill
+
+Install the built-in skill so AI agents (Claude Code, Codex, etc.) automatically know how to use MoeMail:
+
+```bash
+# Auto-detect installed agent platforms and install
+moemail skill install
+
+# Or specify a platform
+moemail skill install --platform claude
+moemail skill install --platform codex
+```
+
 For full documentation, see [packages/cli/README.md](packages/cli/README.md).
 
 ## Environment Variables
