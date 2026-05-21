@@ -41,6 +41,15 @@
       "createMessageShare": "메시지 공유 링크 생성",
       "getMessageShares": "메시지 공유 링크 가져오기",
       "deleteMessageShare": "메시지 공유 링크 삭제",
+      "updateConfig": "시스템 설정 업데이트",
+      "findZone": "도메인 Zone ID 조회",
+      "getDomains": "도메인 목록 가져오기",
+      "createDomain": "서브도메인 생성",
+      "getDomain": "도메인 상세 가져오기",
+      "deleteDomain": "서브도메인 삭제",
+      "createSubdomainEmail": "서브도메인 이메일 생성",
+      "getSubdomainEmails": "서브도메인 이메일 목록 가져오기",
+      "deleteSubdomainEmail": "서브도메인 이메일 삭제",
       "notes": "참고:",
       "note1": "YOUR_API_KEY를 실제 API Key로 교체하세요",
       "note2": "/api/config 엔드포인트는 사용 가능한 이메일 도메인을 포함한 시스템 설정을 제공합니다",
@@ -51,7 +60,10 @@
       "note7": "cursor는 페이지네이션을 위한 것으로, 이전 응답에서 nextCursor를 가져옵니다",
       "note8": "모든 요청에는 X-API-Key 헤더가 필요합니다",
       "note9": "expiresIn은 공유 링크 유효 기간(밀리초)이며, 0은 영구를 의미합니다",
-      "note10": "shareId는 공유 기록의 고유 식별자입니다"
+      "note10": "shareId는 공유 기록의 고유 식별자입니다",
+      "note11": "domainId는 서브도메인 기록의 고유 식별자이며 /api/domains 또는 /api/emails/subdomain에서 가져올 수 있습니다",
+      "note12": "도메인 관리 및 서브도메인 이메일 API는 Emperor 역할과 설정된 Cloudflare DNS Worker가 필요합니다",
+      "note13": "POST /api/config는 전체 설정을 저장하므로 먼저 GET /api/config로 현재 값을 가져온 뒤 수정하세요"
     }
   },
   "emailService": {

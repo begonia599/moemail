@@ -41,6 +41,15 @@
       "createMessageShare": "Create Message Share Link",
       "getMessageShares": "Get Message Share Links",
       "deleteMessageShare": "Delete Message Share Link",
+      "updateConfig": "Update System Config",
+      "findZone": "Find Domain Zone ID",
+      "getDomains": "Get Domain List",
+      "createDomain": "Create Subdomain",
+      "getDomain": "Get Domain Details",
+      "deleteDomain": "Delete Subdomain",
+      "createSubdomainEmail": "Create Subdomain Email",
+      "getSubdomainEmails": "Get Subdomain Email List",
+      "deleteSubdomainEmail": "Delete Subdomain Email",
       "notes": "Notes:",
       "note1": "Replace YOUR_API_KEY with your actual API Key",
       "note2": "/api/config endpoint provides system configuration including available email domains",
@@ -51,7 +60,10 @@
       "note7": "cursor is for pagination, get nextCursor from previous response",
       "note8": "All requests require X-API-Key header",
       "note9": "expiresIn is the share link validity period in milliseconds, 0 means permanent",
-      "note10": "shareId is the unique identifier for a share record"
+      "note10": "shareId is the unique identifier for a share record",
+      "note11": "domainId is the unique identifier for a subdomain record, available from /api/domains or /api/emails/subdomain",
+      "note12": "Domain management and subdomain email endpoints require the Emperor role and a configured Cloudflare DNS Worker",
+      "note13": "POST /api/config saves the full configuration, so GET /api/config first and edit from the current values"
     }
   },
   "emailService": {

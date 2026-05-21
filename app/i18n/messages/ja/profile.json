@@ -41,6 +41,15 @@
       "createMessageShare": "メール共有リンクを作成",
       "getMessageShares": "メール共有リンク一覧を取得",
       "deleteMessageShare": "メール共有リンクを削除",
+      "updateConfig": "システム設定を更新",
+      "findZone": "ドメイン Zone ID を検索",
+      "getDomains": "ドメイン一覧を取得",
+      "createDomain": "サブドメインを作成",
+      "getDomain": "ドメイン詳細を取得",
+      "deleteDomain": "サブドメインを削除",
+      "createSubdomainEmail": "サブドメインメールを作成",
+      "getSubdomainEmails": "サブドメインメール一覧を取得",
+      "deleteSubdomainEmail": "サブドメインメールを削除",
       "notes": "注意:",
       "note1": "YOUR_API_KEY を実際の API Key に置き換えてください",
       "note2": "/api/config エンドポイントで利用可能なメールボックスドメインなどのシステム設定を取得できます",
@@ -51,7 +60,10 @@
       "note7": "cursor はページネーション用で、前回のレスポンスから nextCursor を取得してください",
       "note8": "すべてのリクエストには X-API-Key ヘッダーが必要です",
       "note9": "expiresIn は共有リンクの有効期間（ミリ秒）で、0 は永久を意味します",
-      "note10": "shareId は共有記録の一意な識別子です"
+      "note10": "shareId は共有記録の一意な識別子です",
+      "note11": "domainId はサブドメイン記録の一意な識別子で、/api/domains または /api/emails/subdomain から取得できます",
+      "note12": "ドメイン管理とサブドメインメールの API には Emperor ロールと設定済みの Cloudflare DNS Worker が必要です",
+      "note13": "POST /api/config は設定全体を保存するため、先に GET /api/config で現在値を取得してから変更してください"
     }
   },
   "emailService": {

@@ -41,6 +41,15 @@
       "createMessageShare": "建立郵件分享連結",
       "getMessageShares": "取得郵件分享連結清單",
       "deleteMessageShare": "刪除郵件分享連結",
+      "updateConfig": "更新系統設定",
+      "findZone": "查詢網域 Zone ID",
+      "getDomains": "取得網域清單",
+      "createDomain": "建立子網域",
+      "getDomain": "取得網域詳情",
+      "deleteDomain": "刪除子網域",
+      "createSubdomainEmail": "建立子網域郵箱",
+      "getSubdomainEmails": "取得子網域郵箱清單",
+      "deleteSubdomainEmail": "刪除子網域郵箱",
       "notes": "注意：",
       "note1": "請將 YOUR_API_KEY 替換為你的實際 API Key",
       "note2": "/api/config 介面可取得系統設定，包括可用的郵箱網域清單",
@@ -51,7 +60,10 @@
       "note7": "cursor 用於分頁，從上一次請求的回應中取得 nextCursor",
       "note8": "所有請求都需要包含 X-API-Key 請求標頭",
       "note9": "expiresIn 是分享連結的有效期（毫秒），0 表示永久有效",
-      "note10": "shareId 是分享紀錄的唯一識別碼"
+      "note10": "shareId 是分享紀錄的唯一識別碼",
+      "note11": "domainId 是子網域紀錄的唯一識別碼，可從 /api/domains 或 /api/emails/subdomain 取得",
+      "note12": "網域管理和子網域郵箱介面需要皇帝角色，且 Cloudflare DNS Worker 已正確設定",
+      "note13": "POST /api/config 會完整儲存設定，呼叫前建議先 GET /api/config 並基於目前值修改"
     }
   },
   "emailService": {

@@ -41,6 +41,15 @@
       "createMessageShare": "创建邮件分享链接",
       "getMessageShares": "获取邮件分享链接列表",
       "deleteMessageShare": "删除邮件分享链接",
+      "updateConfig": "更新系统配置",
+      "findZone": "查询域名 Zone ID",
+      "getDomains": "获取域名列表",
+      "createDomain": "创建子域名",
+      "getDomain": "获取域名详情",
+      "deleteDomain": "删除子域名",
+      "createSubdomainEmail": "创建子域名邮箱",
+      "getSubdomainEmails": "获取子域名邮箱列表",
+      "deleteSubdomainEmail": "删除子域名邮箱",
       "notes": "注意：",
       "note1": "请将 YOUR_API_KEY 替换为你的实际 API Key",
       "note2": "/api/config 接口可获取系统配置，包括可用的邮箱域名列表",
@@ -51,7 +60,10 @@
       "note7": "cursor 用于分页，从上一次请求的响应中获取 nextCursor",
       "note8": "所有请求都需要包含 X-API-Key 请求头",
       "note9": "expiresIn 是分享链接的有效期（毫秒），0 表示永久有效",
-      "note10": "shareId 是分享记录的唯一标识符"
+      "note10": "shareId 是分享记录的唯一标识符",
+      "note11": "domainId 是子域名记录的唯一标识符，可从 /api/domains 或 /api/emails/subdomain 获取",
+      "note12": "域名管理和子域名邮箱接口需要皇帝角色，并且 Cloudflare DNS Worker 已正确配置",
+      "note13": "POST /api/config 会完整保存配置，调用前建议先 GET /api/config 并基于当前值修改"
     }
   },
   "emailService": {

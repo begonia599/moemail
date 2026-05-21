@@ -48,6 +48,7 @@ export function ApiKeyPanel() {
   const [isLoading, setIsLoading] = useState(true)
   const { checkPermission } = useRolePermission()
   const canManageApiKey = checkPermission(PERMISSIONS.MANAGE_API_KEY)
+  const canManageConfig = checkPermission(PERMISSIONS.MANAGE_CONFIG)
 
   const fetchApiKeys = async () => {
     try {
@@ -342,6 +343,174 @@ export function ApiKeyPanel() {
                         </pre>
                       </div>
 
+                      {canManageConfig && (
+                        <>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="text-sm font-medium">{t("docs.updateConfig")}</div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => copyToClipboard(
+                              `curl -X POST ${window.location.protocol}//${window.location.host}/api/config \\
+  -H "X-API-Key: YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "defaultRole": "civilian",
+    "emailDomains": "example.com,newsletter.example.com",
+    "adminContact": "admin@example.com",
+    "maxEmails": "5",
+    "domainZones": {
+      "example.com": "cloudflare-zone-id"
+    },
+    "turnstile": {
+      "enabled": false,
+      "siteKey": "",
+      "secretKey": ""
+    }
+  }'`
+                            )}
+                          >
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        <pre className="text-xs bg-muted/50 rounded-lg p-4 overflow-x-auto">
+                          {`curl -X POST ${window.location.protocol}//${window.location.host}/api/config \\
+  -H "X-API-Key: YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "defaultRole": "civilian",
+    "emailDomains": "example.com,newsletter.example.com",
+    "adminContact": "admin@example.com",
+    "maxEmails": "5",
+    "domainZones": {
+      "example.com": "cloudflare-zone-id"
+    },
+    "turnstile": {
+      "enabled": false,
+      "siteKey": "",
+      "secretKey": ""
+    }
+  }'`}
+                        </pre>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="text-sm font-medium">{t("docs.findZone")}</div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => copyToClipboard(
+                              `curl -X POST ${window.location.protocol}//${window.location.host}/api/domains/find-zone \\
+  -H "X-API-Key: YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"domain": "example.com"}'`
+                            )}
+                          >
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        <pre className="text-xs bg-muted/50 rounded-lg p-4 overflow-x-auto">
+                          {`curl -X POST ${window.location.protocol}//${window.location.host}/api/domains/find-zone \\
+  -H "X-API-Key: YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"domain": "example.com"}'`}
+                        </pre>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="text-sm font-medium">{t("docs.getDomains")}</div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => copyToClipboard(
+                              `curl ${window.location.protocol}//${window.location.host}/api/domains?rootDomain=example.com \\
+  -H "X-API-Key: YOUR_API_KEY"`
+                            )}
+                          >
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        <pre className="text-xs bg-muted/50 rounded-lg p-4 overflow-x-auto">
+                          {`curl ${window.location.protocol}//${window.location.host}/api/domains?rootDomain=example.com \\
+  -H "X-API-Key: YOUR_API_KEY"`}
+                        </pre>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="text-sm font-medium">{t("docs.createDomain")}</div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => copyToClipboard(
+                              `curl -X POST ${window.location.protocol}//${window.location.host}/api/domains \\
+  -H "X-API-Key: YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "subdomain": "newsletter",
+    "domain": "example.com"
+  }'`
+                            )}
+                          >
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        <pre className="text-xs bg-muted/50 rounded-lg p-4 overflow-x-auto">
+                          {`curl -X POST ${window.location.protocol}//${window.location.host}/api/domains \\
+  -H "X-API-Key: YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "subdomain": "newsletter",
+    "domain": "example.com"
+  }'`}
+                        </pre>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="text-sm font-medium">{t("docs.getDomain")}</div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => copyToClipboard(
+                              `curl ${window.location.protocol}//${window.location.host}/api/domains/{domainId} \\
+  -H "X-API-Key: YOUR_API_KEY"`
+                            )}
+                          >
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        <pre className="text-xs bg-muted/50 rounded-lg p-4 overflow-x-auto">
+                          {`curl ${window.location.protocol}//${window.location.host}/api/domains/{domainId} \\
+  -H "X-API-Key: YOUR_API_KEY"`}
+                        </pre>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="text-sm font-medium">{t("docs.deleteDomain")}</div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => copyToClipboard(
+                              `curl -X DELETE ${window.location.protocol}//${window.location.host}/api/domains/{domainId} \\
+  -H "X-API-Key: YOUR_API_KEY"`
+                            )}
+                          >
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        <pre className="text-xs bg-muted/50 rounded-lg p-4 overflow-x-auto">
+                          {`curl -X DELETE ${window.location.protocol}//${window.location.host}/api/domains/{domainId} \\
+  -H "X-API-Key: YOUR_API_KEY"`}
+                        </pre>
+                      </div>
+                        </>
+                      )}
+
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
                           <div className="text-sm font-medium">{t("docs.generateEmail")}</div>
@@ -373,6 +542,88 @@ export function ApiKeyPanel() {
   }'`}
                         </pre>
                       </div>
+
+                      {canManageConfig && (
+                        <>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="text-sm font-medium">{t("docs.createSubdomainEmail")}</div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => copyToClipboard(
+                              `curl -X POST ${window.location.protocol}//${window.location.host}/api/emails/subdomain \\
+  -H "X-API-Key: YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "domain": "example.com",
+    "prefix": "newsletter",
+    "name": "hello",
+    "expiryTime": 0
+  }'`
+                            )}
+                          >
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        <pre className="text-xs bg-muted/50 rounded-lg p-4 overflow-x-auto">
+                          {`curl -X POST ${window.location.protocol}//${window.location.host}/api/emails/subdomain \\
+  -H "X-API-Key: YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "domain": "example.com",
+    "prefix": "newsletter",
+    "name": "hello",
+    "expiryTime": 0
+  }'`}
+                        </pre>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="text-sm font-medium">{t("docs.getSubdomainEmails")}</div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => copyToClipboard(
+                              `curl ${window.location.protocol}//${window.location.host}/api/emails/subdomain?rootDomain=example.com \\
+  -H "X-API-Key: YOUR_API_KEY"`
+                            )}
+                          >
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        <pre className="text-xs bg-muted/50 rounded-lg p-4 overflow-x-auto">
+                          {`curl ${window.location.protocol}//${window.location.host}/api/emails/subdomain?rootDomain=example.com \\
+  -H "X-API-Key: YOUR_API_KEY"`}
+                        </pre>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="text-sm font-medium">{t("docs.deleteSubdomainEmail")}</div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => copyToClipboard(
+                              `curl -X DELETE ${window.location.protocol}//${window.location.host}/api/emails/subdomain \\
+  -H "X-API-Key: YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"domainId": "DOMAIN_ID"}'`
+                            )}
+                          >
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        <pre className="text-xs bg-muted/50 rounded-lg p-4 overflow-x-auto">
+                          {`curl -X DELETE ${window.location.protocol}//${window.location.host}/api/emails/subdomain \\
+  -H "X-API-Key: YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"domainId": "DOMAIN_ID"}'`}
+                        </pre>
+                      </div>
+                        </>
+                      )}
 
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
@@ -575,6 +826,13 @@ export function ApiKeyPanel() {
                           <li>{t("docs.note8")}</li>
                           <li>{t("docs.note9")}</li>
                           <li>{t("docs.note10")}</li>
+                          {canManageConfig && (
+                            <>
+                              <li>{t("docs.note11")}</li>
+                              <li>{t("docs.note12")}</li>
+                              <li>{t("docs.note13")}</li>
+                            </>
+                          )}
                         </ul>
                       </div>
                     </div>
@@ -587,4 +845,4 @@ export function ApiKeyPanel() {
       }
     </div>
   )
-} 
+}
