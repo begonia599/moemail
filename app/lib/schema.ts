@@ -1,6 +1,7 @@
 import { integer, sqliteTable, text, primaryKey, uniqueIndex, index } from "drizzle-orm/sqlite-core"
 import type { AdapterAccountType } from "next-auth/adapters"
 import { relations, sql } from 'drizzle-orm';
+import type { DomainCleanupPolicy } from "./domain-cleanup"
 
 // https://authjs.dev/getting-started/adapters/drizzle
 export const users = sqliteTable("user", {
@@ -160,13 +161,21 @@ export const domains = sqliteTable('domain', {
   zoneId: text('zone_id').notNull(),                  // CF Zone ID
   mxRecordIds: text('mx_record_ids'),                 // JSON array of CF DNS record IDs
   txtRecordId: text('txt_record_id'),                 // CF DNS record ID for SPF TXT
-  status: text('status').notNull().default('active'),  // active / pending / error
+  status: text('status').notNull().default('active'),  // active / cleanup_pending / cleanup_failed
+  cleanupPolicy: text('cleanup_policy')
+    .$type<DomainCleanupPolicy>()
+    .notNull()
+    .default('manual'),
+  cleanupAfter: integer('cleanup_after', { mode: 'timestamp_ms' }),
+  lastUsedAt: integer('last_used_at', { mode: 'timestamp_ms' }),
   createdAt: integer('created_at', { mode: 'timestamp_ms' })
     .notNull()
     .$defaultFn(() => new Date()),
   createdBy: text('created_by').references(() => users.id),
 }, (table) => ({
   statusIdx: index('domain_status_idx').on(table.status),
+  cleanupPolicyIdx: index('domain_cleanup_policy_idx').on(table.cleanupPolicy),
+  cleanupAfterIdx: index('domain_cleanup_after_idx').on(table.cleanupAfter),
   createdByIdx: index('domain_created_by_idx').on(table.createdBy),
 }));
 

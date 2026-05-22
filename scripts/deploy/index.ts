@@ -1,7 +1,7 @@
 import { NotFoundError } from "cloudflare";
 import "dotenv/config";
 import { execSync } from "node:child_process";
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, unlinkSync } from "node:fs";
 import { resolve } from "node:path";
 import { randomUUID } from "node:crypto";
 import {
@@ -146,18 +146,35 @@ const updateDatabaseConfig = (dbId: string) => {
 const updateKVConfig = (namespaceId: string) => {
   console.log(`📝 Updating KV namespace ID (${namespaceId}) in configurations...`);
 
-  // KV命名空间只在主wrangler.json中使用
-  const wranglerPath = resolve("wrangler.json");
-  if (existsSync(wranglerPath)) {
+  const configFiles = ["wrangler.json", "wrangler.cleanup.json"];
+
+  for (const filename of configFiles) {
+    const wranglerPath = resolve(filename);
+    if (!existsSync(wranglerPath)) continue;
+
     try {
       const json = JSON.parse(readFileSync(wranglerPath, "utf-8"));
-      if (json.kv_namespaces && json.kv_namespaces.length > 0) {
-        json.kv_namespaces[0].id = namespaceId;
+      if (!Array.isArray(json.kv_namespaces)) {
+        json.kv_namespaces = [];
       }
+
+      const siteConfigBinding = json.kv_namespaces.find(
+        (namespace: { binding?: string }) => namespace.binding === "SITE_CONFIG"
+      );
+
+      if (siteConfigBinding) {
+        siteConfigBinding.id = namespaceId;
+      } else {
+        json.kv_namespaces.push({
+          binding: "SITE_CONFIG",
+          id: namespaceId,
+        });
+      }
+
       writeFileSync(wranglerPath, JSON.stringify(json, null, 2));
-      console.log(`✅ Updated KV namespace ID in wrangler.json`);
+      console.log(`✅ Updated KV namespace ID in ${filename}`);
     } catch (error) {
-      console.error(`❌ Failed to update wrangler.json:`, error);
+      console.error(`❌ Failed to update ${filename}:`, error);
     }
   }
 };
@@ -351,7 +368,7 @@ const pushPagesSecret = () => {
 
     // 清理临时文件
     if (existsSync(runtimeEnvFile)) {
-      execSync(`rm ${runtimeEnvFile}`, { stdio: "inherit" });
+      unlinkSync(runtimeEnvFile);
     }
 
     console.log("✅ Secrets pushed successfully");
@@ -362,7 +379,7 @@ const pushPagesSecret = () => {
     const runtimeEnvFile = resolve('.env.runtime.json');
     if (existsSync(runtimeEnvFile)) {
       try {
-        execSync(`rm ${runtimeEnvFile}`, { stdio: "inherit" });
+        unlinkSync(runtimeEnvFile);
       } catch (cleanupError) {
         console.error("⚠️ Failed to cleanup temporary file:", cleanupError);
       }
@@ -407,6 +424,29 @@ const deployCleanupWorker = () => {
   console.log("🚧 Deploying Cleanup Worker...");
   try {
     execSync("pnpm dlx wrangler deploy --config wrangler.cleanup.json", { stdio: "inherit" });
+
+    const secrets: Record<string, string> = {};
+    if (process.env.DNS_WORKER_URL) {
+      secrets.DNS_WORKER_URL = process.env.DNS_WORKER_URL;
+    }
+    if (process.env.DNS_WORKER_SECRET) {
+      secrets.DNS_WORKER_SECRET = process.env.DNS_WORKER_SECRET;
+    }
+
+    if (Object.keys(secrets).length > 0) {
+      const tmpFile = resolve(".cleanup-worker-secrets.json");
+      writeFileSync(tmpFile, JSON.stringify(secrets));
+      try {
+        execSync(`pnpm dlx wrangler secret bulk ${tmpFile} --config wrangler.cleanup.json`, { stdio: "inherit" });
+      } finally {
+        if (existsSync(tmpFile)) {
+          unlinkSync(tmpFile);
+        }
+      }
+    } else {
+      console.log("⚠️ DNS Worker secrets are not set for Cleanup Worker");
+    }
+
     console.log("✅ Cleanup Worker deployed successfully");
   } catch (error) {
     console.error("❌ Cleanup Worker deployment failed:", error);
@@ -451,7 +491,7 @@ const deployDnsWorker = () => {
         execSync(`pnpm dlx wrangler secret bulk ${tmpFile} --config wrangler.dns.json`, { stdio: "inherit" });
       } finally {
         if (existsSync(tmpFile)) {
-          execSync(`rm ${tmpFile}`, { stdio: "inherit" });
+          unlinkSync(tmpFile);
         }
       }
     }

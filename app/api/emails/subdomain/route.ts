@@ -8,6 +8,7 @@ import { getUserId } from "@/lib/apiKey"
 import { getUserRole } from "@/lib/auth"
 import { ROLES } from "@/lib/permissions"
 import { buildFullDomain, normalizeDomainName, validateSubdomainPrefix } from "@/lib/domain-utils"
+import { DOMAIN_CLEANUP_POLICIES, getCleanupAfter, isDomainCleanupPolicy } from "@/lib/domain-cleanup"
 
 export const runtime = "edge"
 
@@ -21,14 +22,15 @@ export const runtime = "edge"
  * 2. 调用 Cloudflare DNS API 创建该子域名的 MX + SPF 记录
  * 3. 将新域名加入 KV 的 EMAIL_DOMAINS
  * 4. 在 D1 中创建 domain 记录
- * 5. 在 D1 中创建 email 记录（永久）
+ * 5. 在 D1 中创建 email 记录
  * 6. 返回完整的邮箱地址
  *
  * Request body:
  * {
  *   prefix?: string   // 可选，子域名前缀，支持多级（不传则随机生成）
  *   name?: string     // 可选，邮箱名（不传则随机生成）
- *   domain?: string   // 可选，根域名（不传则使用 CLOUDFLARE_ROOT_DOMAIN）
+ *   domain: string    // 必填，根域名
+ *   cleanupPolicy?: "auto" | "manual" // 可选，默认 auto
  * }
  *
  * Response:
@@ -60,7 +62,16 @@ export async function POST(request: Request) {
       name?: string
       domain: string
       expiryTime?: number  // 过期时间（毫秒），0 或不传 = 永不过期
+      cleanupPolicy?: string
     }
+
+    if (body.cleanupPolicy !== undefined && !isDomainCleanupPolicy(body.cleanupPolicy)) {
+      return NextResponse.json(
+        { error: "cleanupPolicy 只能是 auto 或 manual" },
+        { status: 400 }
+      )
+    }
+    const cleanupPolicy = body.cleanupPolicy ?? DOMAIN_CLEANUP_POLICIES.AUTO
 
     const rootDomain = typeof body.domain === "string" ? normalizeDomainName(body.domain) : ""
     if (!rootDomain) {
@@ -124,6 +135,25 @@ export async function POST(request: Request) {
       )
     }
 
+    const emailName = body.name || nanoid(8)
+    const address = `${emailName}@${fullDomain}`
+
+    // 确认邮箱地址未被占用，再创建 DNS 和域名记录，避免冲突时留下孤立子域名。
+    const existingEmail = await db.query.emails.findFirst({
+      where: eq(sql`LOWER(${emails.address})`, address.toLowerCase()),
+    })
+
+    if (existingEmail) {
+      if (existingEmail.expiresAt < new Date()) {
+        await db.delete(emails).where(eq(emails.id, existingEmail.id))
+      } else {
+        return NextResponse.json(
+          { error: `邮箱地址 ${address} 已被使用` },
+          { status: 409 }
+        )
+      }
+    }
+
     // 1. 通过 DNS Worker 创建 MX + SPF 记录
     const dnsWorkerUrl = env.DNS_WORKER_URL
     const dnsWorkerSecret = env.DNS_WORKER_SECRET
@@ -161,6 +191,12 @@ export async function POST(request: Request) {
       )
     }
 
+    const now = new Date()
+    const expiresAt = body.expiryTime && body.expiryTime > 0
+      ? new Date(now.getTime() + body.expiryTime)
+      : new Date("9999-01-01T00:00:00.000Z")
+    const cleanupAfter = getCleanupAfter(cleanupPolicy, expiresAt)
+
     // 2. D1：保存 domain 记录
     const [newDomain] = await db
       .insert(domains)
@@ -172,6 +208,9 @@ export async function POST(request: Request) {
         mxRecordIds: JSON.stringify(dnsResult.mxRecordIds),
         txtRecordId: dnsResult.txtRecordId,
         status: "active",
+        cleanupPolicy,
+        cleanupAfter,
+        lastUsedAt: now,
         createdBy: userId,
       })
       .returning()
@@ -186,32 +225,6 @@ export async function POST(request: Request) {
       domainList.push(fullDomain)
       await env.SITE_CONFIG.put("EMAIL_DOMAINS", domainList.join(","))
     }
-
-    // 4. D1：创建邮箱记录（永久有效）
-    const emailName = body.name || nanoid(8)
-    const address = `${emailName}@${fullDomain}`
-
-    // 确认邮箱地址未被占用
-    const existingEmail = await db.query.emails.findFirst({
-      where: eq(sql`LOWER(${emails.address})`, address.toLowerCase()),
-    })
-
-    if (existingEmail) {
-      // 如果邮箱已过期，先删除旧记录再允许重新创建
-      if (existingEmail.expiresAt < new Date()) {
-        await db.delete(emails).where(eq(emails.id, existingEmail.id))
-      } else {
-        return NextResponse.json(
-          { error: `邮箱地址 ${address} 已被使用` },
-          { status: 409 }
-        )
-      }
-    }
-
-    const now = new Date()
-    const expiresAt = body.expiryTime && body.expiryTime > 0
-      ? new Date(now.getTime() + body.expiryTime)
-      : new Date("9999-01-01T00:00:00.000Z")
 
     const [newEmail] = await db
       .insert(emails)

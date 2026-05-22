@@ -561,7 +561,8 @@ export function ApiKeyPanel() {
     "domain": "example.com",
     "prefix": "dev.newsletter",
     "name": "hello",
-    "expiryTime": 0
+    "expiryTime": 86400000,
+    "cleanupPolicy": "auto"
   }'`
                             )}
                           >
@@ -576,7 +577,8 @@ export function ApiKeyPanel() {
     "domain": "example.com",
     "prefix": "dev.newsletter",
     "name": "hello",
-    "expiryTime": 0
+    "expiryTime": 86400000,
+    "cleanupPolicy": "auto"
   }'`}
                         </pre>
                       </div>

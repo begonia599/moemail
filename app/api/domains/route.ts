@@ -7,6 +7,7 @@ import { checkPermission } from "@/lib/auth"
 import { PERMISSIONS } from "@/lib/permissions"
 import { getUserId } from "@/lib/apiKey"
 import { buildFullDomain, normalizeDomainName, validateSubdomainPrefix } from "@/lib/domain-utils"
+import { DOMAIN_CLEANUP_POLICIES } from "@/lib/domain-cleanup"
 
 export const runtime = "edge"
 
@@ -103,6 +104,7 @@ export async function POST(request: Request) {
     }
 
     const fullDomain = buildFullDomain(normalizedSubdomain, rootDomain)
+    const now = new Date()
 
     // 检查是否已存在
     const existing = await db.query.domains.findFirst({
@@ -164,6 +166,9 @@ export async function POST(request: Request) {
         mxRecordIds: JSON.stringify(result.mxRecordIds),
         txtRecordId: result.txtRecordId,
         status: "active",
+        cleanupPolicy: DOMAIN_CLEANUP_POLICIES.MANUAL,
+        cleanupAfter: null,
+        lastUsedAt: now,
         createdBy: userId,
       })
       .returning()

@@ -26,6 +26,7 @@ const MAX_DNS_LABEL_LENGTH = 63
 const MAX_DOMAIN_LENGTH = 253
 const MAX_SUBDOMAIN_PREFIX_LEVELS = 5
 const DNS_LABEL_PATTERN = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/
+const NOT_FOUND_PATTERN = /not\s+found|could\s+not\s+find|does\s+not\s+exist/i
 
 interface CloudflareApiResponse<T = unknown> {
   success: boolean
@@ -302,10 +303,16 @@ async function handleDeprovision(body: any, apiToken: string): Promise<Response>
       )
       results.push({ id: recordId, success: true })
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      if (NOT_FOUND_PATTERN.test(message)) {
+        results.push({ id: recordId, success: true })
+        continue
+      }
+
       results.push({
         id: recordId,
         success: false,
-        error: error instanceof Error ? error.message : String(error),
+        error: message,
       })
     }
   }
