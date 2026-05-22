@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { nanoid } from "nanoid"
 import { createDb } from "@/lib/db"
-import { emails } from "@/lib/schema"
+import { emails, domains } from "@/lib/schema"
 import { eq, and, gt, sql } from "drizzle-orm"
 import { EXPIRY_OPTIONS } from "@/types/email"
 import { EMAIL_CONFIG } from "@/config"
@@ -9,6 +9,8 @@ import { getRequestContext } from "@cloudflare/next-on-pages"
 import { getUserId } from "@/lib/apiKey"
 import { getUserRole } from "@/lib/auth"
 import { ROLES } from "@/lib/permissions"
+import { normalizeDomainName } from "@/lib/domain-utils"
+import { DOMAIN_CLEANUP_POLICIES, getCleanupAfter } from "@/lib/domain-cleanup"
 
 export const runtime = "edge"
 
@@ -45,6 +47,7 @@ export async function POST(request: Request) {
       expiryTime: number
       domain: string
     }>()
+    const normalizedDomain = typeof domain === "string" ? normalizeDomainName(domain) : ""
 
     if (!EXPIRY_OPTIONS.some(option => option.value === expiryTime)) {
       return NextResponse.json(
@@ -54,16 +57,29 @@ export async function POST(request: Request) {
     }
 
     const domainString = await env.SITE_CONFIG.get("EMAIL_DOMAINS")
-    const domains = domainString ? domainString.split(',') : ["moemail.app"]
+    const allowedDomains = domainString
+      ? domainString.split(",").map((domain) => normalizeDomainName(domain)).filter(Boolean)
+      : ["moemail.app"]
 
-    if (!domains || !domains.includes(domain)) {
+    if (!allowedDomains.includes(normalizedDomain)) {
       return NextResponse.json(
         { error: "无效的域名" },
         { status: 400 }
       )
     }
 
-    const address = `${name || nanoid(8)}@${domain}`
+    const domainRecord = await db.query.domains.findFirst({
+      where: eq(domains.name, normalizedDomain),
+    })
+
+    if (domainRecord && domainRecord.status !== "active") {
+      return NextResponse.json(
+        { error: "该域名正在清理中或不可用" },
+        { status: 409 }
+      )
+    }
+
+    const address = `${name || nanoid(8)}@${normalizedDomain}`
     const existingEmail = await db.query.emails.findFirst({
       where: eq(sql`LOWER(${emails.address})`, address.toLowerCase())
     })
@@ -95,10 +111,36 @@ export async function POST(request: Request) {
     const result = await db.insert(emails)
       .values(emailData)
       .returning({ id: emails.id, address: emails.address })
+
+    if (domainRecord) {
+      const cleanupAfter = domainRecord.cleanupPolicy === DOMAIN_CLEANUP_POLICIES.AUTO
+        ? getCleanupAfter(domainRecord.cleanupPolicy, expires)
+        : null
+      const nextCleanupAfter = cleanupAfter && domainRecord.cleanupAfter && domainRecord.cleanupAfter > cleanupAfter
+        ? domainRecord.cleanupAfter
+        : cleanupAfter
+
+      const updatedDomains = await db
+        .update(domains)
+        .set({
+          lastUsedAt: now,
+          cleanupAfter: nextCleanupAfter,
+        })
+        .where(and(eq(domains.id, domainRecord.id), eq(domains.status, "active")))
+        .returning({ id: domains.id })
+
+      if (updatedDomains.length === 0) {
+        await db.delete(emails).where(eq(emails.id, result[0].id))
+        return NextResponse.json(
+          { error: "该域名正在清理中或不可用" },
+          { status: 409 }
+        )
+      }
+    }
     
-    return NextResponse.json({ 
+    return NextResponse.json({
       id: result[0].id,
-      email: result[0].address 
+      email: result[0].address
     })
   } catch (error) {
     console.error('Failed to generate email:', error)
@@ -107,4 +149,4 @@ export async function POST(request: Request) {
       { status: 500 }
     )
   }
-} 
+}

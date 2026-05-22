@@ -4,7 +4,7 @@ import Google from "next-auth/providers/google"
 import { DrizzleAdapter } from "@auth/drizzle-adapter"
 import { createDb, Db } from "./db"
 import { accounts, users, roles, userRoles } from "./schema"
-import { eq } from "drizzle-orm"
+import { and, eq } from "drizzle-orm"
 import { getRequestContext } from "@cloudflare/next-on-pages"
 import { Permission, hasPermission, ROLES, Role } from "./permissions"
 import CredentialsProvider from "next-auth/providers/credentials"
@@ -13,6 +13,7 @@ import { authSchema, AuthSchema } from "@/lib/validation"
 import { generateAvatarUrl } from "./avatar"
 import { getUserId } from "./apiKey"
 import { verifyTurnstileToken } from "./turnstile"
+import { getRegistrationStatus } from "./registration"
 
 const ROLE_DESCRIPTIONS: Record<Role, string> = {
   [ROLES.EMPEROR]: "皇帝（网站所有者）",
@@ -182,6 +183,33 @@ export const {
     },
   },
   callbacks: {
+    async signIn({ user, account }) {
+      if (!account || account.provider === "credentials") return true
+
+      const registration = await getRegistrationStatus()
+      if (registration.enabled) return true
+
+      const db = createDb()
+
+      if (account.provider && account.providerAccountId) {
+        const existingAccount = await db.query.accounts.findFirst({
+          where: and(
+            eq(accounts.provider, account.provider),
+            eq(accounts.providerAccountId, account.providerAccountId)
+          ),
+        })
+        if (existingAccount) return true
+      }
+
+      if (user.email) {
+        const existingUserByEmail = await db.query.users.findFirst({
+          where: eq(users.email, user.email),
+        })
+        if (existingUserByEmail) return true
+      }
+
+      return false
+    },
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id

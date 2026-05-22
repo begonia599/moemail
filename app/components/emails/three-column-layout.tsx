@@ -59,7 +59,7 @@ export function ThreeColumnLayout() {
           <div className={headerClass}>
             <h2 className={titleClass}>{t("myEmails")}</h2>
           </div>
-          <div className="flex-1 overflow-auto">
+          <div className="flex-1 min-h-0">
             <EmailList
               onEmailSelect={(email) => {
                 setSelectedEmail(email)
@@ -133,7 +133,7 @@ export function ThreeColumnLayout() {
               <div className={headerClass}>
                 <h2 className={titleClass}>{t("myEmails")}</h2>
               </div>
-              <div className="flex-1 overflow-auto">
+              <div className="flex-1 min-h-0">
                 <EmailList
                   onEmailSelect={(email) => {
                     setSelectedEmail(email)
@@ -207,4 +207,4 @@ export function ThreeColumnLayout() {
       </div>
     </div>
   )
-} 
+}

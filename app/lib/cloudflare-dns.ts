@@ -305,7 +305,7 @@ export async function setCatchAllToWorker(
  *
  * @param zoneId - Cloudflare Zone ID
  * @param apiToken - CF API Token (需要 Zone.DNS 编辑权限)
- * @param subdomain - 子域名前缀（如 "newsletter"）
+ * @param subdomain - 子域名前缀（如 "newsletter" 或 "dev.newsletter"）
  * @param rootDomain - 根域名（如 "example.com"）
  * @returns 创建结果，包含所有 DNS 记录 ID
  */

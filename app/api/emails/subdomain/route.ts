@@ -7,6 +7,8 @@ import { getRequestContext } from "@cloudflare/next-on-pages"
 import { getUserId } from "@/lib/apiKey"
 import { getUserRole } from "@/lib/auth"
 import { ROLES } from "@/lib/permissions"
+import { buildFullDomain, normalizeDomainName, validateSubdomainPrefix } from "@/lib/domain-utils"
+import { DOMAIN_CLEANUP_POLICIES, getCleanupAfter, isDomainCleanupPolicy } from "@/lib/domain-cleanup"
 
 export const runtime = "edge"
 
@@ -20,14 +22,15 @@ export const runtime = "edge"
  * 2. 调用 Cloudflare DNS API 创建该子域名的 MX + SPF 记录
  * 3. 将新域名加入 KV 的 EMAIL_DOMAINS
  * 4. 在 D1 中创建 domain 记录
- * 5. 在 D1 中创建 email 记录（永久）
+ * 5. 在 D1 中创建 email 记录
  * 6. 返回完整的邮箱地址
  *
  * Request body:
  * {
- *   prefix?: string   // 可选，子域名前缀（不传则随机生成）
+ *   prefix?: string   // 可选，子域名前缀，支持多级（不传则随机生成）
  *   name?: string     // 可选，邮箱名（不传则随机生成）
- *   domain?: string   // 可选，根域名（不传则使用 CLOUDFLARE_ROOT_DOMAIN）
+ *   domain: string    // 必填，根域名
+ *   cleanupPolicy?: "auto" | "manual" // 可选，默认 auto
  * }
  *
  * Response:
@@ -59,9 +62,18 @@ export async function POST(request: Request) {
       name?: string
       domain: string
       expiryTime?: number  // 过期时间（毫秒），0 或不传 = 永不过期
+      cleanupPolicy?: string
     }
 
-    const rootDomain = body.domain
+    if (body.cleanupPolicy !== undefined && !isDomainCleanupPolicy(body.cleanupPolicy)) {
+      return NextResponse.json(
+        { error: "cleanupPolicy 只能是 auto 或 manual" },
+        { status: 400 }
+      )
+    }
+    const cleanupPolicy = body.cleanupPolicy ?? DOMAIN_CLEANUP_POLICIES.AUTO
+
+    const rootDomain = typeof body.domain === "string" ? normalizeDomainName(body.domain) : ""
     if (!rootDomain) {
       return NextResponse.json(
         { error: "缺少基础域名参数 domain" },
@@ -71,7 +83,9 @@ export async function POST(request: Request) {
 
     // 验证 domain 是否在 EMAIL_DOMAINS 列表中
     const domainString = await env.SITE_CONFIG.get("EMAIL_DOMAINS")
-    const allowedDomains = domainString ? domainString.split(",") : []
+    const allowedDomains = domainString
+      ? domainString.split(",").map((domain) => normalizeDomainName(domain)).filter(Boolean)
+      : []
     if (!allowedDomains.includes(rootDomain)) {
       return NextResponse.json(
         { error: `域名 ${rootDomain} 不在允许列表中，请先在前端配置中添加` },
@@ -82,7 +96,10 @@ export async function POST(request: Request) {
     // 从 KV 读取预存的 Zone ID
     const zonesJson = await env.SITE_CONFIG.get("EMAIL_DOMAIN_ZONES")
     const zones: Record<string, string> = zonesJson ? JSON.parse(zonesJson) : {}
-    const zoneId = zones[rootDomain]
+    const normalizedZones = Object.fromEntries(
+      Object.entries(zones).map(([domain, zoneId]) => [normalizeDomainName(domain), zoneId])
+    )
+    const zoneId = normalizedZones[rootDomain]
     if (!zoneId) {
       return NextResponse.json(
         { error: `域名 ${rootDomain} 未配置 Zone ID，请在前端配置中填写` },
@@ -91,19 +108,20 @@ export async function POST(request: Request) {
     }
 
 
-    // 生成或使用指定的子域名前缀
-    const subdomainPrefix = (body.prefix || nanoid(6)).toLowerCase()
-
-    // 验证格式
-    const subdomainRegex = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/
-    if (!subdomainRegex.test(subdomainPrefix)) {
-      return NextResponse.json(
-        { error: "子域名格式不正确，只允许小写字母、数字和连字符" },
-        { status: 400 }
-      )
+    if (body.prefix !== undefined && typeof body.prefix !== "string") {
+      return NextResponse.json({ error: "子域名前缀必须是字符串" }, { status: 400 })
     }
 
-    const fullDomain = `${subdomainPrefix}.${rootDomain}`
+    // 生成或使用指定的子域名前缀
+    const subdomainPrefix = body.prefix || nanoid(6)
+
+    const subdomainValidation = validateSubdomainPrefix(subdomainPrefix, rootDomain)
+    if (!subdomainValidation.success) {
+      return NextResponse.json({ error: subdomainValidation.error }, { status: 400 })
+    }
+    const normalizedSubdomainPrefix = subdomainValidation.value
+
+    const fullDomain = buildFullDomain(normalizedSubdomainPrefix, rootDomain)
 
     // 检查子域名是否已存在
     const existingDomain = await db.query.domains.findFirst({
@@ -115,6 +133,25 @@ export async function POST(request: Request) {
         { error: `子域名 ${fullDomain} 已存在` },
         { status: 409 }
       )
+    }
+
+    const emailName = body.name || nanoid(8)
+    const address = `${emailName}@${fullDomain}`
+
+    // 确认邮箱地址未被占用，再创建 DNS 和域名记录，避免冲突时留下孤立子域名。
+    const existingEmail = await db.query.emails.findFirst({
+      where: eq(sql`LOWER(${emails.address})`, address.toLowerCase()),
+    })
+
+    if (existingEmail) {
+      if (existingEmail.expiresAt < new Date()) {
+        await db.delete(emails).where(eq(emails.id, existingEmail.id))
+      } else {
+        return NextResponse.json(
+          { error: `邮箱地址 ${address} 已被使用` },
+          { status: 409 }
+        )
+      }
     }
 
     // 1. 通过 DNS Worker 创建 MX + SPF 记录
@@ -135,7 +172,7 @@ export async function POST(request: Request) {
       },
       body: JSON.stringify({
         zoneId,
-        subdomain: subdomainPrefix,
+        subdomain: normalizedSubdomainPrefix,
         rootDomain,
       }),
     })
@@ -154,17 +191,26 @@ export async function POST(request: Request) {
       )
     }
 
+    const now = new Date()
+    const expiresAt = body.expiryTime && body.expiryTime > 0
+      ? new Date(now.getTime() + body.expiryTime)
+      : new Date("9999-01-01T00:00:00.000Z")
+    const cleanupAfter = getCleanupAfter(cleanupPolicy, expiresAt)
+
     // 2. D1：保存 domain 记录
     const [newDomain] = await db
       .insert(domains)
       .values({
         name: fullDomain,
-        subdomain: subdomainPrefix,
+        subdomain: normalizedSubdomainPrefix,
         rootDomain,
         zoneId,
         mxRecordIds: JSON.stringify(dnsResult.mxRecordIds),
         txtRecordId: dnsResult.txtRecordId,
         status: "active",
+        cleanupPolicy,
+        cleanupAfter,
+        lastUsedAt: now,
         createdBy: userId,
       })
       .returning()
@@ -172,37 +218,13 @@ export async function POST(request: Request) {
 
     // 3. 更新 KV 中的 EMAIL_DOMAINS，追加子域名
     const currentDomains = await env.SITE_CONFIG.get("EMAIL_DOMAINS")
-    const domainList = currentDomains ? currentDomains.split(",") : []
+    const domainList = currentDomains
+      ? currentDomains.split(",").map((domain) => normalizeDomainName(domain)).filter(Boolean)
+      : []
     if (!domainList.includes(fullDomain)) {
       domainList.push(fullDomain)
       await env.SITE_CONFIG.put("EMAIL_DOMAINS", domainList.join(","))
     }
-
-    // 4. D1：创建邮箱记录（永久有效）
-    const emailName = body.name || nanoid(8)
-    const address = `${emailName}@${fullDomain}`
-
-    // 确认邮箱地址未被占用
-    const existingEmail = await db.query.emails.findFirst({
-      where: eq(sql`LOWER(${emails.address})`, address.toLowerCase()),
-    })
-
-    if (existingEmail) {
-      // 如果邮箱已过期，先删除旧记录再允许重新创建
-      if (existingEmail.expiresAt < new Date()) {
-        await db.delete(emails).where(eq(emails.id, existingEmail.id))
-      } else {
-        return NextResponse.json(
-          { error: `邮箱地址 ${address} 已被使用` },
-          { status: 409 }
-        )
-      }
-    }
-
-    const now = new Date()
-    const expiresAt = body.expiryTime && body.expiryTime > 0
-      ? new Date(now.getTime() + body.expiryTime)
-      : new Date("9999-01-01T00:00:00.000Z")
 
     const [newEmail] = await db
       .insert(emails)
@@ -258,7 +280,8 @@ export async function GET(request: Request) {
   const db = createDb()
 
   const { searchParams } = new URL(request.url)
-  const rootDomainFilter = searchParams.get("rootDomain")
+  const rawRootDomainFilter = searchParams.get("rootDomain")
+  const rootDomainFilter = rawRootDomainFilter ? normalizeDomainName(rawRootDomainFilter) : ""
 
   // 获取子域名（支持按根域名筛选）
   const domainConditions = [eq(domains.status, "active")]
@@ -382,9 +405,11 @@ export async function DELETE(request: Request) {
     // 3. 从 KV 移除域名
     const currentDomains = await env.SITE_CONFIG.get("EMAIL_DOMAINS")
     if (currentDomains) {
+      const normalizedDomainName = normalizeDomainName(domain.name)
       const domainList = currentDomains
         .split(",")
-        .filter((d) => d !== domain.name)
+        .map((d) => normalizeDomainName(d))
+        .filter((d) => d && d !== normalizedDomainName)
       await env.SITE_CONFIG.put("EMAIL_DOMAINS", domainList.join(","))
     }
 

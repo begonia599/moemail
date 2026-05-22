@@ -2,6 +2,7 @@ import { PERMISSIONS, Role, ROLES } from "@/lib/permissions"
 import { getRequestContext } from "@cloudflare/next-on-pages"
 import { EMAIL_CONFIG } from "@/config"
 import { checkPermission } from "@/lib/auth"
+import { getRegistrationStatus, REGISTRATION_ENABLED_KEY } from "@/lib/registration"
 
 export const runtime = "edge"
 
@@ -17,7 +18,8 @@ export async function GET() {
     turnstileEnabled,
     turnstileSiteKey,
     turnstileSecretKey,
-    domainZones
+    domainZones,
+    registration
   ] = await Promise.all([
     env.SITE_CONFIG.get("DEFAULT_ROLE"),
     env.SITE_CONFIG.get("EMAIL_DOMAINS"),
@@ -26,7 +28,8 @@ export async function GET() {
     env.SITE_CONFIG.get("TURNSTILE_ENABLED"),
     env.SITE_CONFIG.get("TURNSTILE_SITE_KEY"),
     env.SITE_CONFIG.get("TURNSTILE_SECRET_KEY"),
-    env.SITE_CONFIG.get("EMAIL_DOMAIN_ZONES")
+    env.SITE_CONFIG.get("EMAIL_DOMAIN_ZONES"),
+    getRegistrationStatus()
   ])
 
   return Response.json({
@@ -35,6 +38,7 @@ export async function GET() {
     adminContact: adminContact || "",
     maxEmails: maxEmails || EMAIL_CONFIG.MAX_ACTIVE_EMAILS.toString(),
     domainZones: domainZones ? JSON.parse(domainZones) : {},
+    registrationEnabled: registration.enabled,
     turnstile: canManageConfig ? {
       enabled: turnstileEnabled === "true",
       siteKey: turnstileSiteKey || "",
@@ -58,6 +62,7 @@ export async function POST(request: Request) {
     adminContact,
     maxEmails,
     domainZones,
+    registrationEnabled,
     turnstile
   } = await request.json() as { 
     defaultRole: Exclude<Role, typeof ROLES.EMPEROR>,
@@ -65,6 +70,7 @@ export async function POST(request: Request) {
     adminContact: string,
     maxEmails: string,
     domainZones?: Record<string, string>,
+    registrationEnabled?: boolean,
     turnstile?: {
       enabled: boolean,
       siteKey: string,
@@ -86,8 +92,12 @@ export async function POST(request: Request) {
     return Response.json({ error: "Turnstile 启用时需要提供 Site Key 和 Secret Key" }, { status: 400 })
   }
 
+  if (registrationEnabled !== undefined && typeof registrationEnabled !== "boolean") {
+    return Response.json({ error: "无效的注册开关配置" }, { status: 400 })
+  }
+
   const env = getRequestContext().env
-  await Promise.all([
+  const updates = [
     env.SITE_CONFIG.put("DEFAULT_ROLE", defaultRole),
     env.SITE_CONFIG.put("EMAIL_DOMAINS", emailDomains),
     env.SITE_CONFIG.put("ADMIN_CONTACT", adminContact),
@@ -96,7 +106,13 @@ export async function POST(request: Request) {
     env.SITE_CONFIG.put("TURNSTILE_ENABLED", turnstileConfig.enabled.toString()),
     env.SITE_CONFIG.put("TURNSTILE_SITE_KEY", turnstileConfig.siteKey),
     env.SITE_CONFIG.put("TURNSTILE_SECRET_KEY", turnstileConfig.secretKey)
-  ])
+  ]
+
+  if (registrationEnabled !== undefined) {
+    updates.push(env.SITE_CONFIG.put(REGISTRATION_ENABLED_KEY, registrationEnabled.toString()))
+  }
+
+  await Promise.all(updates)
 
   return Response.json({ success: true })
 } 
