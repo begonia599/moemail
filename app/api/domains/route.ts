@@ -6,6 +6,7 @@ import { getRequestContext } from "@cloudflare/next-on-pages"
 import { checkPermission } from "@/lib/auth"
 import { PERMISSIONS } from "@/lib/permissions"
 import { getUserId } from "@/lib/apiKey"
+import { buildFullDomain, normalizeDomainName, validateSubdomainPrefix } from "@/lib/domain-utils"
 
 export const runtime = "edge"
 
@@ -43,7 +44,7 @@ export async function GET(request: Request) {
  *
  * Request body:
  * {
- *   subdomain: string  // 子域名前缀，如 "newsletter"
+ *   subdomain: string  // 子域名前缀，如 "newsletter" 或 "dev.newsletter"
  * }
  */
 export async function POST(request: Request) {
@@ -61,7 +62,8 @@ export async function POST(request: Request) {
   const env = getRequestContext().env
 
   try {
-    const { subdomain, domain: rootDomain } = await request.json<{ subdomain: string; domain: string }>()
+    const { subdomain, domain } = await request.json<{ subdomain: string; domain: string }>()
+    const rootDomain = typeof domain === "string" ? normalizeDomainName(domain) : ""
 
     // 参数校验
     if (!subdomain || typeof subdomain !== "string") {
@@ -72,27 +74,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "基础域名不能为空" }, { status: 400 })
     }
 
-    // 验证子域名格式：只允许字母、数字、连字符，不能以连字符开头或结尾
-    const subdomainRegex = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/i
-    if (!subdomainRegex.test(subdomain)) {
-      return NextResponse.json(
-        { error: "子域名格式不正确，只允许字母、数字和连字符" },
-        { status: 400 }
-      )
+    const subdomainValidation = validateSubdomainPrefix(subdomain, rootDomain)
+    if (!subdomainValidation.success) {
+      return NextResponse.json({ error: subdomainValidation.error }, { status: 400 })
     }
-
-    // 限制子域名长度
-    if (subdomain.length > 63) {
-      return NextResponse.json(
-        { error: "子域名长度不能超过63个字符" },
-        { status: 400 }
-      )
-    }
+    const normalizedSubdomain = subdomainValidation.value
 
     // 从 KV 读取预存的 Zone ID
     const zonesJson = await env.SITE_CONFIG.get("EMAIL_DOMAIN_ZONES")
     const zones: Record<string, string> = zonesJson ? JSON.parse(zonesJson) : {}
-    const zoneId = zones[rootDomain]
+    const normalizedZones = Object.fromEntries(
+      Object.entries(zones).map(([domain, zoneId]) => [normalizeDomainName(domain), zoneId])
+    )
+    const zoneId = normalizedZones[rootDomain]
     if (!zoneId) {
       return NextResponse.json(
         { error: `域名 ${rootDomain} 未配置 Zone ID，请在前端配置中填写` },
@@ -108,7 +102,7 @@ export async function POST(request: Request) {
       )
     }
 
-    const fullDomain = `${subdomain.toLowerCase()}.${rootDomain}`
+    const fullDomain = buildFullDomain(normalizedSubdomain, rootDomain)
 
     // 检查是否已存在
     const existing = await db.query.domains.findFirst({
@@ -140,7 +134,7 @@ export async function POST(request: Request) {
       },
       body: JSON.stringify({
         zoneId,
-        subdomain: subdomain.toLowerCase(),
+        subdomain: normalizedSubdomain,
         rootDomain,
       }),
     })
@@ -164,7 +158,7 @@ export async function POST(request: Request) {
       .insert(domains)
       .values({
         name: fullDomain,
-        subdomain: subdomain.toLowerCase(),
+        subdomain: normalizedSubdomain,
         rootDomain,
         zoneId,
         mxRecordIds: JSON.stringify(result.mxRecordIds),
@@ -176,7 +170,9 @@ export async function POST(request: Request) {
 
     // 3. 更新 KV 中的 EMAIL_DOMAINS，追加新域名
     const currentDomains = await env.SITE_CONFIG.get("EMAIL_DOMAINS")
-    const domainList = currentDomains ? currentDomains.split(",") : []
+    const domainList = currentDomains
+      ? currentDomains.split(",").map((domain) => normalizeDomainName(domain)).filter(Boolean)
+      : []
 
     if (!domainList.includes(fullDomain)) {
       domainList.push(fullDomain)

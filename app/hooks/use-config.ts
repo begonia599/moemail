@@ -4,6 +4,7 @@ import { create } from "zustand"
 import { Role, ROLES } from "@/lib/permissions"
 import { EMAIL_CONFIG } from "@/config"
 import { useEffect } from "react"
+import { normalizeDomainName } from "@/lib/domain-utils"
 
 interface Config {
   defaultRole: Exclude<Role, typeof ROLES.EMPEROR>
@@ -35,7 +36,9 @@ const useConfigStore = create<ConfigStore>((set) => ({
         config: {
           defaultRole: data.defaultRole || ROLES.CIVILIAN,
           emailDomains: data.emailDomains,
-          emailDomainsArray: data.emailDomains.split(','),
+          emailDomainsArray: Array.from(new Set(
+            data.emailDomains.split(",").map(domain => normalizeDomainName(domain)).filter(Boolean)
+          )),
           adminContact: data.adminContact || "",
           maxEmails: Number(data.maxEmails) || EMAIL_CONFIG.MAX_ACTIVE_EMAILS,
           registrationEnabled: data.registrationEnabled ?? true

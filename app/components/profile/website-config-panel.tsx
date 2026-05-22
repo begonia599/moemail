@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Eye, EyeOff, X } from "lucide-react"
+import { normalizeDomainName, validateSubdomainPrefix } from "@/lib/domain-utils"
 import {
   Select,
   SelectContent,
@@ -26,6 +27,21 @@ interface SubdomainInfo {
   rootDomain: string
   status: string
   createdAt: string
+}
+
+function findHighestConfiguredAncestor(domain: string, candidates: string[]): string | null {
+  const candidateSet = new Set(candidates)
+  const parts = domain.split(".")
+  let ancestorMatch: string | null = null
+
+  for (let index = 1; index < parts.length - 1; index++) {
+    const ancestor = parts.slice(index).join(".")
+    if (candidateSet.has(ancestor)) {
+      ancestorMatch = ancestor
+    }
+  }
+
+  return ancestorMatch
 }
 
 export function WebsiteConfigPanel() {
@@ -137,10 +153,12 @@ export function WebsiteConfigPanel() {
   }
 
   const addDomain = async () => {
-    const val = newDomainInput.trim().toLowerCase()
+    const val = normalizeDomainName(newDomainInput)
     if (!val) return
 
-    const list = emailDomains ? emailDomains.split(",").filter(Boolean) : []
+    const list = emailDomains
+      ? Array.from(new Set(emailDomains.split(",").map(d => normalizeDomainName(d)).filter(Boolean)))
+      : []
     if (list.includes(val)) {
       toast({ title: t("domainExists"), variant: "destructive" })
       return
@@ -186,7 +204,11 @@ export function WebsiteConfigPanel() {
   }
 
   const removeDomain = (domain: string) => {
-    const list = emailDomains.split(",").filter(Boolean).filter(d => d.trim() !== domain)
+    const normalizedDomain = normalizeDomainName(domain)
+    const list = emailDomains
+      .split(",")
+      .map(d => normalizeDomainName(d))
+      .filter(d => d && d !== normalizedDomain)
     setEmailDomains(list.join(","))
     setDomainZones(prev => {
       const next = { ...prev }
@@ -199,19 +221,19 @@ export function WebsiteConfigPanel() {
     const prefix = newSubdomainInputs[rootDomain]?.trim().toLowerCase()
     if (!prefix) return
 
-    // Validate format
-    const subdomainRegex = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/
-    if (!subdomainRegex.test(prefix)) {
+    const subdomainValidation = validateSubdomainPrefix(prefix, rootDomain)
+    if (!subdomainValidation.success) {
       toast({ title: t("subdomainInvalid"), variant: "destructive" })
       return
     }
+    const normalizedPrefix = subdomainValidation.value
 
     setCreatingSubdomain(rootDomain)
     try {
       const res = await fetch("/api/domains", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subdomain: prefix, domain: rootDomain }),
+        body: JSON.stringify({ subdomain: normalizedPrefix, domain: rootDomain }),
       })
 
       if (!res.ok) {
@@ -224,7 +246,7 @@ export function WebsiteConfigPanel() {
         return
       }
 
-      toast({ title: t("subdomainCreated"), description: `${prefix}.${rootDomain}` })
+      toast({ title: t("subdomainCreated"), description: `${normalizedPrefix}.${rootDomain}` })
       setNewSubdomainInputs(prev => ({ ...prev, [rootDomain]: "" }))
       fetchSubdomains()
       fetchConfig()
@@ -253,12 +275,22 @@ export function WebsiteConfigPanel() {
 
   // 解析基础域名列表（去掉自动创建的子域名，只保留手动填入的）
   const baseDomains = emailDomains
-    ? emailDomains.split(",").filter(Boolean).map(d => d.trim())
+    ? Array.from(new Set(emailDomains.split(",").map(d => normalizeDomainName(d)).filter(Boolean)))
     : []
 
-  // 按基础域名分组子域名
+  const displayBaseDomains = baseDomains.filter(domain =>
+    !findHighestConfiguredAncestor(domain, baseDomains)
+  )
+
+  // 按最上层已配置域名分组子域名，避免多级子域名被漏掉
   const getSubdomainsForBase = (baseDomain: string) => {
-    return subdomains.filter(s => s.rootDomain === baseDomain)
+    return subdomains
+      .filter((subdomain) => {
+        if (!subdomain.name.endsWith(`.${baseDomain}`)) return false
+        const ancestor = findHighestConfiguredAncestor(subdomain.name, baseDomains)
+        return ancestor === baseDomain
+      })
+      .sort((a, b) => a.name.split(".").length - b.name.split(".").length || a.name.localeCompare(b.name))
   }
 
   return (
@@ -305,11 +337,7 @@ export function WebsiteConfigPanel() {
 
           {/* 基础域名列表（每个一行，下挂子域名） */}
           <div className="space-y-1">
-            {baseDomains.map((domain) => {
-              // Only show root domains (not subdomains that have a parent in the list)
-              const isChild = baseDomains.some(other => other !== domain && domain.endsWith(`.${other}`))
-              if (isChild) return null
-
+            {displayBaseDomains.map((domain) => {
               const subs = getSubdomainsForBase(domain)
               return (
                 <div key={domain} className="rounded-lg border border-border/60 overflow-hidden">
@@ -343,9 +371,9 @@ export function WebsiteConfigPanel() {
                         >
                           <ChevronRight className="w-3 h-3 shrink-0 opacity-40" />
                           <span className="font-mono">
-                            {sub.subdomain}
+                            {sub.name.slice(0, -domain.length - 1)}
                           </span>
-                          <span className="opacity-40">.{sub.rootDomain}</span>
+                          <span className="opacity-40">.{domain}</span>
                           <span className={`ml-auto text-[10px] px-1.5 py-0.5 rounded-full ${
                             sub.status === 'active' 
                               ? 'bg-green-500/10 text-green-600' 
@@ -404,7 +432,7 @@ export function WebsiteConfigPanel() {
               )
             })}
 
-            {baseDomains.length === 0 && (
+            {displayBaseDomains.length === 0 && (
               <div className="text-xs text-muted-foreground py-3 text-center border border-dashed rounded-lg">
                 {t("noDomains")}
               </div>

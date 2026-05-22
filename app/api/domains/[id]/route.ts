@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm"
 import { getRequestContext } from "@cloudflare/next-on-pages"
 import { checkPermission } from "@/lib/auth"
 import { PERMISSIONS } from "@/lib/permissions"
+import { normalizeDomainName } from "@/lib/domain-utils"
 
 export const runtime = "edge"
 
@@ -78,9 +79,11 @@ export async function DELETE(
     // 2. 从 KV 的 EMAIL_DOMAINS 中移除该域名
     const currentDomains = await env.SITE_CONFIG.get("EMAIL_DOMAINS")
     if (currentDomains) {
+      const normalizedDomainName = normalizeDomainName(domain.name)
       const domainList = currentDomains
         .split(",")
-        .filter((d) => d !== domain.name)
+        .map((d) => normalizeDomainName(d))
+        .filter((d) => d && d !== normalizedDomainName)
       await env.SITE_CONFIG.put("EMAIL_DOMAINS", domainList.join(","))
     }
 

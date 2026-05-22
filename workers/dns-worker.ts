@@ -22,11 +22,73 @@ const CF_EMAIL_MX_SERVERS = [
 ]
 
 const CF_EMAIL_SPF_RECORD = "v=spf1 include:_spf.mx.cloudflare.net ~all"
+const MAX_DNS_LABEL_LENGTH = 63
+const MAX_DOMAIN_LENGTH = 253
+const MAX_SUBDOMAIN_PREFIX_LEVELS = 5
+const DNS_LABEL_PATTERN = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/
 
 interface CloudflareApiResponse<T = unknown> {
   success: boolean
   errors: Array<{ code: number; message: string }>
   result: T
+}
+
+type SubdomainValidationResult =
+  | { success: true; value: string; fullDomain: string }
+  | { success: false; error: string }
+
+function normalizeDomainName(value: string): string {
+  return value.trim().toLowerCase().replace(/\.$/, "")
+}
+
+function validateSubdomainPrefix(value: unknown, rootDomain: string): SubdomainValidationResult {
+  if (typeof value !== "string") {
+    return { success: false, error: "Subdomain prefix must be a string" }
+  }
+
+  const normalized = value.trim().toLowerCase()
+  if (!normalized) {
+    return { success: false, error: "Subdomain prefix is required" }
+  }
+
+  if (normalized === rootDomain || normalized.endsWith(`.${rootDomain}`)) {
+    return {
+      success: false,
+      error: "Use a relative subdomain prefix only; do not include rootDomain",
+    }
+  }
+
+  if (normalized.startsWith(".") || normalized.endsWith(".")) {
+    return { success: false, error: "Subdomain prefix cannot start or end with a dot" }
+  }
+
+  if (normalized.includes("..")) {
+    return { success: false, error: "Subdomain prefix cannot contain consecutive dots" }
+  }
+
+  const labels = normalized.split(".")
+  if (labels.length > MAX_SUBDOMAIN_PREFIX_LEVELS) {
+    return {
+      success: false,
+      error: `Subdomain prefix supports at most ${MAX_SUBDOMAIN_PREFIX_LEVELS} levels`,
+    }
+  }
+
+  for (const label of labels) {
+    if (label.length > MAX_DNS_LABEL_LENGTH || !DNS_LABEL_PATTERN.test(label)) {
+      return {
+        success: false,
+        error: "Each subdomain label must be 1-63 chars, letters, numbers, or hyphens, and cannot start or end with a hyphen",
+      }
+    }
+  }
+
+  const fullDomain = `${normalized}.${rootDomain}`
+  if (fullDomain.length > MAX_DOMAIN_LENGTH) {
+    return { success: false, error: "Full domain cannot exceed 253 characters" }
+  }
+
+  return { success: true, value: normalized, fullDomain }
 }
 
 async function cfFetch<T>(
@@ -126,11 +188,22 @@ async function setCatchAllToWorker(
 
 async function handleProvision(body: any, apiToken: string, emailWorkerName?: string): Promise<Response> {
   const { zoneId, subdomain, rootDomain } = body
-  if (!zoneId || !subdomain || !rootDomain) {
+  if (typeof zoneId !== "string" || !zoneId.trim() || typeof rootDomain !== "string") {
     return Response.json({ error: "Missing zoneId, subdomain, or rootDomain" }, { status: 400 })
   }
 
-  const fullDomain = `${subdomain}.${rootDomain}`
+  const normalizedZoneId = zoneId.trim()
+  const normalizedRootDomain = normalizeDomainName(rootDomain)
+  if (!normalizedRootDomain) {
+    return Response.json({ error: "Missing zoneId, subdomain, or rootDomain" }, { status: 400 })
+  }
+
+  const subdomainValidation = validateSubdomainPrefix(subdomain, normalizedRootDomain)
+  if (!subdomainValidation.success) {
+    return Response.json({ error: subdomainValidation.error }, { status: 400 })
+  }
+
+  const fullDomain = subdomainValidation.fullDomain
   const mxRecordIds: string[] = []
   let txtRecordId: string | null = null
   let emailRoutingEnabled = false
@@ -140,7 +213,7 @@ async function handleProvision(body: any, apiToken: string, emailWorkerName?: st
     // 1. Create MX records
     for (const mx of CF_EMAIL_MX_SERVERS) {
       const data = await cfFetch<{ id: string }>(
-        `/zones/${zoneId}/dns_records`,
+        `/zones/${normalizedZoneId}/dns_records`,
         apiToken,
         {
           method: "POST",
@@ -158,7 +231,7 @@ async function handleProvision(body: any, apiToken: string, emailWorkerName?: st
 
     // 2. Create SPF TXT record
     const spfData = await cfFetch<{ id: string }>(
-      `/zones/${zoneId}/dns_records`,
+      `/zones/${normalizedZoneId}/dns_records`,
       apiToken,
       {
         method: "POST",
@@ -173,7 +246,7 @@ async function handleProvision(body: any, apiToken: string, emailWorkerName?: st
     txtRecordId = spfData.result.id
 
     // 3. Enable Email Routing on the zone (idempotent)
-    const enableResult = await enableEmailRouting(zoneId, apiToken)
+    const enableResult = await enableEmailRouting(normalizedZoneId, apiToken)
     emailRoutingEnabled = enableResult.success
     if (!enableResult.success) {
       console.warn(`Email Routing enable warning: ${enableResult.error}`)
@@ -181,7 +254,7 @@ async function handleProvision(body: any, apiToken: string, emailWorkerName?: st
 
     // 4. Set catch-all rule to route emails to Email Worker
     if (emailWorkerName) {
-      const catchAllResult = await setCatchAllToWorker(zoneId, apiToken, emailWorkerName)
+      const catchAllResult = await setCatchAllToWorker(normalizedZoneId, apiToken, emailWorkerName)
       catchAllSet = catchAllResult.success
       if (!catchAllResult.success) {
         console.warn(`Catch-all rule warning: ${catchAllResult.error}`)
@@ -213,16 +286,17 @@ async function handleProvision(body: any, apiToken: string, emailWorkerName?: st
 
 async function handleDeprovision(body: any, apiToken: string): Promise<Response> {
   const { zoneId, recordIds } = body
-  if (!zoneId || !recordIds || !Array.isArray(recordIds)) {
+  if (typeof zoneId !== "string" || !zoneId.trim() || !recordIds || !Array.isArray(recordIds)) {
     return Response.json({ error: "Missing zoneId or recordIds" }, { status: 400 })
   }
+  const normalizedZoneId = zoneId.trim()
 
   const results: Array<{ id: string; success: boolean; error?: string }> = []
 
   for (const recordId of recordIds) {
     try {
       await cfFetch(
-        `/zones/${zoneId}/dns_records/${recordId}`,
+        `/zones/${normalizedZoneId}/dns_records/${recordId}`,
         apiToken,
         { method: "DELETE" }
       )
@@ -242,16 +316,21 @@ async function handleDeprovision(body: any, apiToken: string): Promise<Response>
 
 async function handleFindZone(body: any, apiToken: string): Promise<Response> {
   const { domain } = body
-  if (!domain) {
+  if (typeof domain !== "string") {
     return Response.json({ error: "Missing domain" }, { status: 400 })
   }
 
-  const parts = domain.split(".")
+  const normalizedDomain = normalizeDomainName(domain)
+  if (!normalizedDomain) {
+    return Response.json({ error: "Missing domain" }, { status: 400 })
+  }
+
+  const parts = normalizedDomain.split(".")
   for (let i = 0; i < parts.length - 1; i++) {
     const candidate = parts.slice(i).join(".")
     try {
       const data = await cfFetch<Array<{ id: string; name: string }>>(
-        `/zones?name=${candidate}&status=active`,
+        `/zones?name=${encodeURIComponent(candidate)}&status=active`,
         apiToken
       )
       if (Array.isArray(data.result) && data.result.length > 0) {
@@ -262,7 +341,7 @@ async function handleFindZone(body: any, apiToken: string): Promise<Response> {
     }
   }
 
-  return Response.json({ error: `Zone not found for ${domain}` }, { status: 404 })
+  return Response.json({ error: `Zone not found for ${normalizedDomain}` }, { status: 404 })
 }
 
 // ---- Main Worker ----

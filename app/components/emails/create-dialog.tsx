@@ -29,36 +29,42 @@ interface DomainGroup {
 
 /**
  * Parse flat domain list into hierarchical groups.
- * A domain is considered a subdomain if removing its first segment yields
- * another domain in the list.
- * e.g. ["example.com", "news.example.com", "test.example.com", "other.dev"]
+ * Every configured descendant is grouped under its highest configured ancestor.
+ * e.g. ["example.com", "news.example.com", "dev.news.example.com", "other.dev"]
  * =>  [
- *       { root: "example.com", subdomains: ["news.example.com", "test.example.com"] },
+ *       { root: "example.com", subdomains: ["news.example.com", "dev.news.example.com"] },
  *       { root: "other.dev", subdomains: [] }
  *     ]
  */
 function buildDomainGroups(domains: string[]): DomainGroup[] {
   const domainSet = new Set(domains)
-  const childOf = new Map<string, string>() // subdomain -> root
+  const rootOf = new Map<string, string>() // descendant -> highest configured ancestor
 
   for (const d of domains) {
     const parts = d.split(".")
-    if (parts.length >= 3) {
-      // Try stripping the first segment: "a.b.com" -> "b.com"
-      const parent = parts.slice(1).join(".")
-      if (domainSet.has(parent)) {
-        childOf.set(d, parent)
+    for (let index = 1; index < parts.length - 1; index++) {
+      const ancestor = parts.slice(index).join(".")
+      if (domainSet.has(ancestor)) {
+        rootOf.set(d, ancestor)
       }
     }
   }
 
-  const rootDomains = domains.filter(d => !childOf.has(d))
+  const rootDomains = domains.filter(d => !rootOf.has(d))
   const groups: DomainGroup[] = rootDomains.map(root => ({
     root,
-    subdomains: domains.filter(d => childOf.get(d) === root),
+    subdomains: domains
+      .filter(d => rootOf.get(d) === root)
+      .sort((a, b) => a.split(".").length - b.split(".").length || a.localeCompare(b)),
   }))
 
   return groups
+}
+
+function getLeafDomains(domains: string[]): string[] {
+  return domains.filter(domain =>
+    !domains.some(candidate => candidate !== domain && candidate.endsWith(`.${domain}`))
+  )
 }
 
 export function CreateDialog({ onEmailCreated }: CreateDialogProps) {
@@ -84,21 +90,21 @@ export function CreateDialog({ onEmailCreated }: CreateDialogProps) {
     return config.emailDomainsArray
   }, [config?.emailDomainsArray])
 
+  const randomCandidates = useMemo(() => {
+    return getLeafDomains(allDomains)
+  }, [allDomains])
+
   // Set initial selected domain
   useEffect(() => {
-    if (allDomains.length > 0 && !selectedDomain) {
-      setSelectedDomain(allDomains[0])
+    if (allDomains.length === 0) {
+      if (selectedDomain) setSelectedDomain("")
+      return
     }
-  }, [allDomains, selectedDomain])
 
-  // 随机候选域名：排除有子域名的根域名，只从子域名（及无子域名的独立根域名）中随机
-  const randomCandidates = useMemo(() => {
-    // 找出有子域名的根域名，排除它们
-    const rootsWithChildren = new Set(
-      domainGroups.filter(g => g.subdomains.length > 0).map(g => g.root)
-    )
-    return allDomains.filter(d => !rootsWithChildren.has(d))
-  }, [allDomains, domainGroups])
+    if (!selectedDomain || !allDomains.includes(selectedDomain)) {
+      setSelectedDomain(randomCandidates[0] || allDomains[0])
+    }
+  }, [allDomains, randomCandidates, selectedDomain])
 
   const randomAll = () => {
     const candidates = randomCandidates.length > 0 ? randomCandidates : allDomains
@@ -225,7 +231,7 @@ export function CreateDialog({ onEmailCreated }: CreateDialogProps) {
                       >
                         <ChevronRight className="w-3 h-3 shrink-0 opacity-40" />
                         <span className="font-mono text-xs truncate">
-                          {sub.replace(`.${group.root}`, '')}
+                          {sub.slice(0, -group.root.length - 1)}
                         </span>
                         <span className="text-xs opacity-40">.{group.root}</span>
                         {selectedDomain === sub && (

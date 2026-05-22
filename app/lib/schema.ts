@@ -154,8 +154,8 @@ export const messageShares = sqliteTable('message_share', {
 
 export const domains = sqliteTable('domain', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
-  name: text('name').notNull().unique(),              // e.g. newsletter.example.com
-  subdomain: text('subdomain').notNull(),             // e.g. newsletter
+  name: text('name').notNull().unique(),              // e.g. dev.newsletter.example.com
+  subdomain: text('subdomain').notNull(),             // e.g. dev.newsletter
   rootDomain: text('root_domain').notNull(),          // e.g. example.com
   zoneId: text('zone_id').notNull(),                  // CF Zone ID
   mxRecordIds: text('mx_record_ids'),                 // JSON array of CF DNS record IDs
@@ -216,4 +216,4 @@ export const domainsRelations = relations(domains, ({ one }) => ({
     fields: [domains.createdBy],
     references: [users.id],
   }),
-}));
+}));

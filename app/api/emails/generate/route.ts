@@ -9,6 +9,7 @@ import { getRequestContext } from "@cloudflare/next-on-pages"
 import { getUserId } from "@/lib/apiKey"
 import { getUserRole } from "@/lib/auth"
 import { ROLES } from "@/lib/permissions"
+import { normalizeDomainName } from "@/lib/domain-utils"
 
 export const runtime = "edge"
 
@@ -45,6 +46,7 @@ export async function POST(request: Request) {
       expiryTime: number
       domain: string
     }>()
+    const normalizedDomain = typeof domain === "string" ? normalizeDomainName(domain) : ""
 
     if (!EXPIRY_OPTIONS.some(option => option.value === expiryTime)) {
       return NextResponse.json(
@@ -54,16 +56,18 @@ export async function POST(request: Request) {
     }
 
     const domainString = await env.SITE_CONFIG.get("EMAIL_DOMAINS")
-    const domains = domainString ? domainString.split(',') : ["moemail.app"]
+    const domains = domainString
+      ? domainString.split(",").map((domain) => normalizeDomainName(domain)).filter(Boolean)
+      : ["moemail.app"]
 
-    if (!domains || !domains.includes(domain)) {
+    if (!domains.includes(normalizedDomain)) {
       return NextResponse.json(
         { error: "无效的域名" },
         { status: 400 }
       )
     }
 
-    const address = `${name || nanoid(8)}@${domain}`
+    const address = `${name || nanoid(8)}@${normalizedDomain}`
     const existingEmail = await db.query.emails.findFirst({
       where: eq(sql`LOWER(${emails.address})`, address.toLowerCase())
     })
@@ -96,9 +100,9 @@ export async function POST(request: Request) {
       .values(emailData)
       .returning({ id: emails.id, address: emails.address })
     
-    return NextResponse.json({ 
+    return NextResponse.json({
       id: result[0].id,
-      email: result[0].address 
+      email: result[0].address
     })
   } catch (error) {
     console.error('Failed to generate email:', error)
@@ -107,4 +111,4 @@ export async function POST(request: Request) {
       { status: 500 }
     )
   }
-} 
+}
