@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { useSession } from "next-auth/react"
 import { useTranslations } from "next-intl"
 import { CreateDialog } from "./create-dialog"
@@ -45,6 +45,7 @@ interface EmailResponse {
 
 export function EmailList({ onEmailSelect, selectedEmailId }: EmailListProps) {
   const { data: session } = useSession()
+  const hasSession = Boolean(session)
   const { config } = useConfig()
   const { role } = useUserRole()
   const t = useTranslations("emails.list")
@@ -56,9 +57,25 @@ export function EmailList({ onEmailSelect, selectedEmailId }: EmailListProps) {
   const [loadingMore, setLoadingMore] = useState(false)
   const [total, setTotal] = useState(0)
   const [emailToDelete, setEmailToDelete] = useState<Email | null>(null)
+  const emailsRef = useRef<Email[]>([])
+  const listRef = useRef<HTMLDivElement | null>(null)
+  const loadingMoreCursorRef = useRef<string | null>(null)
+  const lastAutoLoadCursorRef = useRef<string | null>(null)
   const { toast } = useToast()
 
-  const fetchEmails = async (cursor?: string) => {
+  const setEmailList = useCallback((nextEmails: Email[]) => {
+    emailsRef.current = nextEmails
+    setEmails(nextEmails)
+  }, [])
+
+  const fetchEmails = useCallback(async (cursor?: string): Promise<boolean> => {
+    if (cursor) {
+      if (loadingMoreCursorRef.current === cursor) {
+        return false
+      }
+      loadingMoreCursorRef.current = cursor
+    }
+
     try {
       const url = new URL("/api/emails", window.location.origin)
       if (cursor) {
@@ -69,42 +86,56 @@ export function EmailList({ onEmailSelect, selectedEmailId }: EmailListProps) {
       
       if (!cursor) {
         const newEmails = data.emails
-        const oldEmails = emails
+        const oldEmails = emailsRef.current
 
         const lastDuplicateIndex = newEmails.findIndex(
           newEmail => oldEmails.some(oldEmail => oldEmail.id === newEmail.id)
         )
 
         if (lastDuplicateIndex === -1) {
-          setEmails(newEmails)
+          setEmailList(newEmails)
           setNextCursor(data.nextCursor)
           setTotal(data.total)
-          return
+          return true
         }
+
         const uniqueNewEmails = newEmails.slice(0, lastDuplicateIndex)
-        setEmails([...uniqueNewEmails, ...oldEmails])
+        setEmailList([...uniqueNewEmails, ...oldEmails])
         setTotal(data.total)
-        return
+        return true
       }
-      setEmails(prev => [...prev, ...data.emails])
+
+      setEmails(prev => {
+        const existingIds = new Set(prev.map(email => email.id))
+        const uniqueEmails = data.emails.filter(email => !existingIds.has(email.id))
+        const nextEmails = [...prev, ...uniqueEmails]
+        emailsRef.current = nextEmails
+        return nextEmails
+      })
       setNextCursor(data.nextCursor)
       setTotal(data.total)
+      return true
     } catch (error) {
       console.error("Failed to fetch emails:", error)
+      return false
     } finally {
+      if (cursor && loadingMoreCursorRef.current === cursor) {
+        loadingMoreCursorRef.current = null
+      }
       setLoading(false)
       setRefreshing(false)
       setLoadingMore(false)
     }
-  }
+  }, [setEmailList])
 
   const handleRefresh = async () => {
+    lastAutoLoadCursorRef.current = null
     setRefreshing(true)
     await fetchEmails()
   }
 
   const handleScroll = useThrottle((e: React.UIEvent<HTMLDivElement>) => {
-    if (loadingMore) return
+    if (loadingMore || loadingMoreCursorRef.current) return
 
     const { scrollHeight, scrollTop, clientHeight } = e.currentTarget
     const threshold = clientHeight * 1.5
@@ -112,13 +143,64 @@ export function EmailList({ onEmailSelect, selectedEmailId }: EmailListProps) {
 
     if (remainingScroll <= threshold && nextCursor) {
       setLoadingMore(true)
-      fetchEmails(nextCursor)
+      void fetchEmails(nextCursor)
     }
   }, 200)
 
   useEffect(() => {
-    if (session) fetchEmails()
-  }, [session])
+    if (hasSession) void fetchEmails()
+  }, [hasSession, fetchEmails])
+
+  const requestAutoLoadMore = useCallback(() => {
+    if (!hasSession || loading || loadingMore || refreshing || !nextCursor || loadingMoreCursorRef.current) {
+      return
+    }
+
+    const listElement = listRef.current
+    if (!listElement || listElement.scrollHeight > listElement.clientHeight) {
+      return
+    }
+
+    if (lastAutoLoadCursorRef.current === nextCursor) {
+      return
+    }
+
+    lastAutoLoadCursorRef.current = nextCursor
+    setLoadingMore(true)
+    void fetchEmails(nextCursor).then((success) => {
+      if (!success && lastAutoLoadCursorRef.current === nextCursor) {
+        lastAutoLoadCursorRef.current = null
+      }
+    })
+  }, [fetchEmails, hasSession, loading, loadingMore, nextCursor, refreshing])
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(requestAutoLoadMore)
+    return () => cancelAnimationFrame(frame)
+  }, [emails.length, requestAutoLoadMore])
+
+  useEffect(() => {
+    if (typeof ResizeObserver === "undefined") return
+
+    const listElement = listRef.current
+    if (!listElement) return
+
+    let frame: number | null = null
+    const observer = new ResizeObserver(() => {
+      if (frame !== null) {
+        cancelAnimationFrame(frame)
+      }
+      frame = requestAnimationFrame(requestAutoLoadMore)
+    })
+
+    observer.observe(listElement)
+    return () => {
+      if (frame !== null) {
+        cancelAnimationFrame(frame)
+      }
+      observer.disconnect()
+    }
+  }, [requestAutoLoadMore])
 
   const handleDelete = async (email: Email) => {
     try {
@@ -136,7 +218,11 @@ export function EmailList({ onEmailSelect, selectedEmailId }: EmailListProps) {
         return
       }
 
-      setEmails(prev => prev.filter(e => e.id !== email.id))
+      setEmails(prev => {
+        const nextEmails = prev.filter(e => e.id !== email.id)
+        emailsRef.current = nextEmails
+        return nextEmails
+      })
       setTotal(prev => prev - 1)
 
       toast({
@@ -185,7 +271,7 @@ export function EmailList({ onEmailSelect, selectedEmailId }: EmailListProps) {
           <CreateDialog onEmailCreated={handleRefresh} />
         </div>
         
-        <div className="flex-1 overflow-auto p-2" onScroll={handleScroll}>
+        <div ref={listRef} className="flex-1 overflow-auto p-2" onScroll={handleScroll}>
           {loading ? (
             <div className="text-center text-sm text-gray-500">{t("loading")}</div>
           ) : emails.length > 0 ? (
@@ -261,4 +347,4 @@ export function EmailList({ onEmailSelect, selectedEmailId }: EmailListProps) {
       </AlertDialog>
     </>
   )
-} 
+}
