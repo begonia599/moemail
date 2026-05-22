@@ -35,6 +35,7 @@ export function WebsiteConfigPanel() {
   const [emailDomains, setEmailDomains] = useState<string>("")
   const [adminContact, setAdminContact] = useState<string>("")
   const [maxEmails, setMaxEmails] = useState<string>(EMAIL_CONFIG.MAX_ACTIVE_EMAILS.toString())
+  const [registrationEnabled, setRegistrationEnabled] = useState(true)
   const [turnstileEnabled, setTurnstileEnabled] = useState(false)
   const [turnstileSiteKey, setTurnstileSiteKey] = useState("")
   const [turnstileSecretKey, setTurnstileSecretKey] = useState("")
@@ -58,6 +59,7 @@ export function WebsiteConfigPanel() {
         adminContact: string,
         maxEmails: string,
         domainZones?: Record<string, string>,
+        registrationEnabled?: boolean,
         turnstile?: {
           enabled: boolean,
           siteKey: string,
@@ -69,6 +71,7 @@ export function WebsiteConfigPanel() {
       setAdminContact(data.adminContact)
       setMaxEmails(data.maxEmails || EMAIL_CONFIG.MAX_ACTIVE_EMAILS.toString())
       setDomainZones(data.domainZones || {})
+      setRegistrationEnabled(data.registrationEnabled ?? true)
       setTurnstileEnabled(Boolean(data.turnstile?.enabled))
       setTurnstileSiteKey(data.turnstile?.siteKey ?? "")
       setTurnstileSecretKey(data.turnstile?.secretKey ?? "")
@@ -103,6 +106,7 @@ export function WebsiteConfigPanel() {
         adminContact,
         maxEmails: maxEmails || EMAIL_CONFIG.MAX_ACTIVE_EMAILS.toString(),
         domainZones: overrides?.domainZones ?? domainZones,
+        registrationEnabled,
         turnstile: {
           enabled: turnstileEnabled,
           siteKey: turnstileSiteKey,
@@ -277,6 +281,22 @@ export function WebsiteConfigPanel() {
               <SelectItem value={ROLES.CIVILIAN}>{tCard("roles.CIVILIAN")}</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+
+        <div className="flex items-center justify-between gap-4 rounded-lg border border-border/60 px-3 py-3">
+          <div className="space-y-1">
+            <Label htmlFor="registration-enabled" className="text-sm font-medium">
+              {t("registration.enable")}
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              {t("registration.description")}
+            </p>
+          </div>
+          <Switch
+            id="registration-enabled"
+            checked={registrationEnabled}
+            onCheckedChange={setRegistrationEnabled}
+          />
         </div>
 
         {/* 域名配置 - 层级式展示 */}

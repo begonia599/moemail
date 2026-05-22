@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { register } from "@/lib/auth"
 import { authSchema, AuthSchema } from "@/lib/validation"
 import { verifyTurnstileToken } from "@/lib/turnstile"
+import { getRegistrationStatus } from "@/lib/registration"
 
 export const runtime = "edge"
 
@@ -19,6 +20,17 @@ export async function POST(request: Request) {
     }
 
     const { username, password, turnstileToken } = json
+
+    const registration = await getRegistrationStatus()
+    if (!registration.enabled) {
+      return NextResponse.json(
+        {
+          error: "注册功能已关闭，请联系管理员",
+          code: "REGISTRATION_DISABLED",
+        },
+        { status: 403 }
+      )
+    }
 
     const verification = await verifyTurnstileToken(turnstileToken)
     if (!verification.success) {

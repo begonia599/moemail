@@ -119,6 +119,10 @@
     "adminContact": "Admin Contact",
     "adminContactPlaceholder": "Email or other contact method",
     "maxEmails": "Max Emails per User",
+    "registration": {
+      "enable": "Allow New User Registration",
+      "description": "When disabled, new users cannot create accounts with sign-up or third-party login. Existing users can still sign in."
+    },
     "turnstile": {
       "enable": "Enable Cloudflare Turnstile",
       "enableDescription": "When enabled, username/password login and registration require Turnstile verification",

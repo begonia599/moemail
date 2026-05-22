@@ -29,6 +29,7 @@ interface TurnstileConfigProps {
 }
 
 interface LoginFormProps {
+  registrationEnabled?: boolean
   turnstile?: TurnstileConfigProps
 }
 
@@ -38,7 +39,7 @@ interface FormErrors {
   confirmPassword?: string
 }
 
-export function LoginForm({ turnstile }: LoginFormProps) {
+export function LoginForm({ registrationEnabled = true, turnstile }: LoginFormProps) {
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
@@ -52,6 +53,7 @@ export function LoginForm({ turnstile }: LoginFormProps) {
 
   const turnstileSiteKey = turnstile?.siteKey ?? ""
   const turnstileEnabled = Boolean(turnstile?.enabled && turnstileSiteKey)
+  const canRegister = registrationEnabled
 
   const resetTurnstile = useCallback(() => {
     setTurnstileToken("")
@@ -78,6 +80,7 @@ export function LoginForm({ turnstile }: LoginFormProps) {
   }
 
   const handleTabChange = (value: string) => {
+    if (value === "register" && !canRegister) return
     setActiveTab(value as "login" | "register")
     clearForm()
   }
@@ -141,6 +144,15 @@ export function LoginForm({ turnstile }: LoginFormProps) {
   }
 
   const handleRegister = async () => {
+    if (!canRegister) {
+      toast({
+        title: t("toast.registerFailed"),
+        description: t("registrationDisabled"),
+        variant: "destructive",
+      })
+      return
+    }
+
     if (!validateRegisterForm()) return
     if (!ensureTurnstileSolved()) return
 
@@ -216,10 +228,17 @@ export function LoginForm({ turnstile }: LoginFormProps) {
       </CardHeader>
       <CardContent className="px-6">
         <Tabs value={activeTab} className="w-full" onValueChange={handleTabChange}>
-          <TabsList className="grid w-full grid-cols-2 mb-6">
+          <TabsList className={cn("grid w-full mb-6", canRegister ? "grid-cols-2" : "grid-cols-1")}>
             <TabsTrigger value="login">{t("tabs.login")}</TabsTrigger>
-            <TabsTrigger value="register">{t("tabs.register")}</TabsTrigger>
+            {canRegister && (
+              <TabsTrigger value="register">{t("tabs.register")}</TabsTrigger>
+            )}
           </TabsList>
+          {!canRegister && (
+            <p className="mb-4 rounded-md border border-primary/20 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
+              {t("registrationDisabled")}
+            </p>
+          )}
           <div className="min-h-[220px]">
             <TabsContent value="login" className="space-y-4 mt-0">
               <div className="space-y-3">
@@ -329,92 +348,94 @@ export function LoginForm({ turnstile }: LoginFormProps) {
                 </Button>
               </div>
             </TabsContent>
-            <TabsContent value="register" className="space-y-4 mt-0">
-              <div className="space-y-3">
-                <div className="space-y-1.5">
-                  <div className="relative">
-                    <div className="absolute left-2.5 top-2 text-muted-foreground">
-                      <User2 className="h-5 w-5" />
+            {canRegister && (
+              <TabsContent value="register" className="space-y-4 mt-0">
+                <div className="space-y-3">
+                  <div className="space-y-1.5">
+                    <div className="relative">
+                      <div className="absolute left-2.5 top-2 text-muted-foreground">
+                        <User2 className="h-5 w-5" />
+                      </div>
+                      <Input
+                        className={cn(
+                          "h-9 pl-9 pr-3",
+                          errors.username && "border-destructive focus-visible:ring-destructive"
+                        )}
+                        placeholder={t("fields.username")}
+                        value={username}
+                        onChange={(e) => {
+                          setUsername(e.target.value)
+                          setErrors({})
+                        }}
+                        disabled={loading}
+                      />
                     </div>
-                    <Input
-                      className={cn(
-                        "h-9 pl-9 pr-3",
-                        errors.username && "border-destructive focus-visible:ring-destructive"
-                      )}
-                      placeholder={t("fields.username")}
-                      value={username}
-                      onChange={(e) => {
-                        setUsername(e.target.value)
-                        setErrors({})
-                      }}
-                      disabled={loading}
-                    />
+                    {errors.username && (
+                      <p className="text-xs text-destructive">{errors.username}</p>
+                    )}
                   </div>
-                  {errors.username && (
-                    <p className="text-xs text-destructive">{errors.username}</p>
-                  )}
-                </div>
-                <div className="space-y-1.5">
-                  <div className="relative">
-                    <div className="absolute left-2.5 top-2 text-muted-foreground">
-                      <KeyRound className="h-5 w-5" />
+                  <div className="space-y-1.5">
+                    <div className="relative">
+                      <div className="absolute left-2.5 top-2 text-muted-foreground">
+                        <KeyRound className="h-5 w-5" />
+                      </div>
+                      <Input
+                        className={cn(
+                          "h-9 pl-9 pr-3",
+                          errors.password && "border-destructive focus-visible:ring-destructive"
+                        )}
+                        type="password"
+                        placeholder={t("fields.password")}
+                        value={password}
+                        onChange={(e) => {
+                          setPassword(e.target.value)
+                          setErrors({})
+                        }}
+                        disabled={loading}
+                      />
                     </div>
-                    <Input
-                      className={cn(
-                        "h-9 pl-9 pr-3",
-                        errors.password && "border-destructive focus-visible:ring-destructive"
-                      )}
-                      type="password"
-                      placeholder={t("fields.password")}
-                      value={password}
-                      onChange={(e) => {
-                        setPassword(e.target.value)
-                        setErrors({})
-                      }}
-                      disabled={loading}
-                    />
+                    {errors.password && (
+                      <p className="text-xs text-destructive">{errors.password}</p>
+                    )}
                   </div>
-                  {errors.password && (
-                    <p className="text-xs text-destructive">{errors.password}</p>
-                  )}
-                </div>
-                <div className="space-y-1.5">
-                  <div className="relative">
-                    <div className="absolute left-2.5 top-2 text-muted-foreground">
-                      <KeyRound className="h-5 w-5" />
+                  <div className="space-y-1.5">
+                    <div className="relative">
+                      <div className="absolute left-2.5 top-2 text-muted-foreground">
+                        <KeyRound className="h-5 w-5" />
+                      </div>
+                      <Input
+                        className={cn(
+                          "h-9 pl-9 pr-3",
+                          errors.confirmPassword && "border-destructive focus-visible:ring-destructive"
+                        )}
+                        type="password"
+                        placeholder={t("fields.confirmPassword")}
+                        value={confirmPassword}
+                        onChange={(e) => {
+                          setConfirmPassword(e.target.value)
+                          setErrors({})
+                        }}
+                        disabled={loading}
+                      />
                     </div>
-                    <Input
-                      className={cn(
-                        "h-9 pl-9 pr-3",
-                        errors.confirmPassword && "border-destructive focus-visible:ring-destructive"
-                      )}
-                      type="password"
-                      placeholder={t("fields.confirmPassword")}
-                      value={confirmPassword}
-                      onChange={(e) => {
-                        setConfirmPassword(e.target.value)
-                        setErrors({})
-                      }}
-                      disabled={loading}
-                    />
+                    {errors.confirmPassword && (
+                      <p className="text-xs text-destructive">{errors.confirmPassword}</p>
+                    )}
                   </div>
-                  {errors.confirmPassword && (
-                    <p className="text-xs text-destructive">{errors.confirmPassword}</p>
-                  )}
                 </div>
-              </div>
 
-              <div className="space-y-3 pt-1">
-                <Button
-                  className="w-full"
-                  onClick={handleRegister}
-                  disabled={loading}
-                >
-                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {t("actions.register")}
-                </Button>
-              </div>
-            </TabsContent>
+                <div className="space-y-3 pt-1">
+                  <Button
+                    className="w-full"
+                    onClick={handleRegister}
+                    disabled={loading}
+                  >
+                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {t("actions.register")}
+                  </Button>
+                </div>
+              </TabsContent>
+            )}
           </div>
         </Tabs>
         {turnstileEnabled && turnstileSiteKey && (

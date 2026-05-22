@@ -360,6 +360,7 @@ export function ApiKeyPanel() {
     "emailDomains": "example.com,newsletter.example.com",
     "adminContact": "admin@example.com",
     "maxEmails": "5",
+    "registrationEnabled": true,
     "domainZones": {
       "example.com": "cloudflare-zone-id"
     },
@@ -383,6 +384,7 @@ export function ApiKeyPanel() {
     "emailDomains": "example.com,newsletter.example.com",
     "adminContact": "admin@example.com",
     "maxEmails": "5",
+    "registrationEnabled": true,
     "domainZones": {
       "example.com": "cloudflare-zone-id"
     },

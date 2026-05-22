@@ -11,6 +11,7 @@ interface Config {
   emailDomainsArray: string[]
   adminContact: string
   maxEmails: number
+  registrationEnabled: boolean
 }
 
 interface ConfigStore {
@@ -36,7 +37,8 @@ const useConfigStore = create<ConfigStore>((set) => ({
           emailDomains: data.emailDomains,
           emailDomainsArray: data.emailDomains.split(','),
           adminContact: data.adminContact || "",
-          maxEmails: Number(data.maxEmails) || EMAIL_CONFIG.MAX_ACTIVE_EMAILS
+          maxEmails: Number(data.maxEmails) || EMAIL_CONFIG.MAX_ACTIVE_EMAILS,
+          registrationEnabled: data.registrationEnabled ?? true
         },
         loading: false
       })
@@ -59,4 +61,4 @@ export function useConfig() {
   }, [store.config, store.loading])
 
   return store
-} 
+}
