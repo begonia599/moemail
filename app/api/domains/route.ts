@@ -44,9 +44,11 @@ export async function GET(request: Request) {
   if (rootDomain) {
     conditions.push(eq(domains.rootDomain, rootDomain))
   }
+  conditions.push(eq(domains.cleanupPolicy, DOMAIN_CLEANUP_POLICIES.MANUAL))
+  conditions.push(eq(domains.status, "active"))
 
   const allDomains = await db.query.domains.findMany({
-    where: conditions.length > 0 ? and(...conditions) : undefined,
+    where: and(...conditions),
     orderBy: (domains, { desc }) => [desc(domains.createdAt)],
   })
 

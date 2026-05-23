@@ -1,3 +1,4 @@
+import { DOMAIN_CLEANUP_POLICIES } from "@/lib/domain-cleanup"
 import { PERMISSIONS, Role, ROLES } from "@/lib/permissions"
 import { getRequestContext } from "@cloudflare/next-on-pages"
 import { EMAIL_CONFIG } from "@/config"
@@ -5,7 +6,7 @@ import { checkPermission } from "@/lib/auth"
 import { getRegistrationStatus, REGISTRATION_ENABLED_KEY } from "@/lib/registration"
 import { createDb } from "@/lib/db"
 import { domains } from "@/lib/schema"
-import { eq } from "drizzle-orm"
+import { and, eq } from "drizzle-orm"
 import { normalizeDomainName } from "@/lib/domain-utils"
 
 export const runtime = "edge"
@@ -39,12 +40,28 @@ function hasConfiguredAncestor(domain: string, candidates: string[]): boolean {
   return false
 }
 
-async function getActiveDomainNames(): Promise<string[]> {
+async function getActiveManualDomainNames(): Promise<string[]> {
   const db = createDb()
   const activeDomains = await db
     .select({ name: domains.name })
     .from(domains)
-    .where(eq(domains.status, "active"))
+    .where(and(
+      eq(domains.cleanupPolicy, DOMAIN_CLEANUP_POLICIES.MANUAL),
+      eq(domains.status, "active")
+    ))
+
+  return activeDomains.map((domain) => normalizeDomainName(domain.name)).filter(Boolean)
+}
+
+async function getActiveAutoDomainNames(): Promise<string[]> {
+  const db = createDb()
+  const activeDomains = await db
+    .select({ name: domains.name })
+    .from(domains)
+    .where(and(
+      eq(domains.cleanupPolicy, DOMAIN_CLEANUP_POLICIES.AUTO),
+      eq(domains.status, "active")
+    ))
 
   return activeDomains.map((domain) => normalizeDomainName(domain.name)).filter(Boolean)
 }
@@ -103,7 +120,7 @@ export async function GET() {
     getRegistrationStatus()
   ])
   const parsedDomainZones = normalizeDomainZones(domainZones ? JSON.parse(domainZones) : {})
-  const activeDomainNames = await getActiveDomainNames()
+  const activeDomainNames = await getActiveManualDomainNames()
   const requestedEmailDomains = parseDomainList(emailDomains || "moemail.app")
   const sanitizedEmailDomains = sanitizeEmailDomains(
     requestedEmailDomains,
@@ -111,14 +128,6 @@ export async function GET() {
     activeDomainNames
   )
   const sanitizedEmailDomainsString = stringifyDomainList(sanitizedEmailDomains)
-
-  if (sanitizedEmailDomainsString !== stringifyDomainList(requestedEmailDomains)) {
-    try {
-      await env.SITE_CONFIG.put("EMAIL_DOMAINS", sanitizedEmailDomainsString)
-    } catch (error) {
-      console.warn("Failed to persist sanitized EMAIL_DOMAINS:", error)
-    }
-  }
 
   return Response.json({
     defaultRole: defaultRole || ROLES.CIVILIAN,
@@ -190,15 +199,19 @@ export async function POST(request: Request) {
 
   const env = getRequestContext().env
   const normalizedDomainZones = normalizeDomainZones(domainZones || {})
-  const activeDomainNames = await getActiveDomainNames()
+  const [activeManualDomainNames, activeAutoDomainNames] = await Promise.all([
+    getActiveManualDomainNames(),
+    getActiveAutoDomainNames(),
+  ])
   const sanitizedEmailDomains = sanitizeEmailDomains(
     parseDomainList(emailDomains),
     normalizedDomainZones,
-    activeDomainNames
+    activeManualDomainNames
   )
+  const persistedEmailDomains = Array.from(new Set([...sanitizedEmailDomains, ...activeAutoDomainNames]))
   const updates = [
     env.SITE_CONFIG.put("DEFAULT_ROLE", defaultRole),
-    env.SITE_CONFIG.put("EMAIL_DOMAINS", stringifyDomainList(sanitizedEmailDomains)),
+    env.SITE_CONFIG.put("EMAIL_DOMAINS", stringifyDomainList(persistedEmailDomains)),
     env.SITE_CONFIG.put("ADMIN_CONTACT", adminContact),
     env.SITE_CONFIG.put("MAX_EMAILS", maxEmails),
     env.SITE_CONFIG.put("EMAIL_DOMAIN_ZONES", JSON.stringify(normalizedDomainZones)),
