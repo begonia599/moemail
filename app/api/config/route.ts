@@ -66,6 +66,16 @@ async function getActiveAutoDomainNames(): Promise<string[]> {
   return activeDomains.map((domain) => normalizeDomainName(domain.name)).filter(Boolean)
 }
 
+async function getAutoDomainNames(): Promise<string[]> {
+  const db = createDb()
+  const autoDomains = await db
+    .select({ name: domains.name })
+    .from(domains)
+    .where(eq(domains.cleanupPolicy, DOMAIN_CLEANUP_POLICIES.AUTO))
+
+  return autoDomains.map((domain) => normalizeDomainName(domain.name)).filter(Boolean)
+}
+
 function normalizeDomainZones(value: Record<string, string> | null | undefined): Record<string, string> {
   if (!value) return {}
 
@@ -79,13 +89,19 @@ function normalizeDomainZones(value: Record<string, string> | null | undefined):
 function sanitizeEmailDomains(
   requestedDomains: string[],
   domainZones: Record<string, string>,
-  activeDomainNames: string[]
+  activeDomainNames: string[],
+  hiddenDomainNames: string[] = []
 ): string[] {
   const activeDomainSet = new Set(activeDomainNames)
+  const hiddenDomainSet = new Set(hiddenDomainNames)
   const zoneDomainSet = new Set(Object.keys(domainZones))
   const mergedDomains = Array.from(new Set([...requestedDomains, ...activeDomainNames]))
 
   return mergedDomains.filter((domain) => {
+    if (hiddenDomainSet.has(domain)) {
+      return false
+    }
+
     if (activeDomainSet.has(domain) || zoneDomainSet.has(domain)) {
       return true
     }
@@ -107,7 +123,9 @@ export async function GET() {
     turnstileSiteKey,
     turnstileSecretKey,
     domainZones,
-    registration
+    registration,
+    activeManualDomainNames,
+    autoDomainNames
   ] = await Promise.all([
     env.SITE_CONFIG.get("DEFAULT_ROLE"),
     env.SITE_CONFIG.get("EMAIL_DOMAINS"),
@@ -117,15 +135,17 @@ export async function GET() {
     env.SITE_CONFIG.get("TURNSTILE_SITE_KEY"),
     env.SITE_CONFIG.get("TURNSTILE_SECRET_KEY"),
     env.SITE_CONFIG.get("EMAIL_DOMAIN_ZONES"),
-    getRegistrationStatus()
+    getRegistrationStatus(),
+    getActiveManualDomainNames(),
+    getAutoDomainNames()
   ])
   const parsedDomainZones = normalizeDomainZones(domainZones ? JSON.parse(domainZones) : {})
-  const activeDomainNames = await getActiveManualDomainNames()
   const requestedEmailDomains = parseDomainList(emailDomains || "moemail.app")
   const sanitizedEmailDomains = sanitizeEmailDomains(
     requestedEmailDomains,
     parsedDomainZones,
-    activeDomainNames
+    activeManualDomainNames,
+    autoDomainNames
   )
   const sanitizedEmailDomainsString = stringifyDomainList(sanitizedEmailDomains)
 
@@ -199,14 +219,16 @@ export async function POST(request: Request) {
 
   const env = getRequestContext().env
   const normalizedDomainZones = normalizeDomainZones(domainZones || {})
-  const [activeManualDomainNames, activeAutoDomainNames] = await Promise.all([
+  const [activeManualDomainNames, activeAutoDomainNames, autoDomainNames] = await Promise.all([
     getActiveManualDomainNames(),
     getActiveAutoDomainNames(),
+    getAutoDomainNames(),
   ])
   const sanitizedEmailDomains = sanitizeEmailDomains(
     parseDomainList(emailDomains),
     normalizedDomainZones,
-    activeManualDomainNames
+    activeManualDomainNames,
+    autoDomainNames
   )
   const persistedEmailDomains = Array.from(new Set([...sanitizedEmailDomains, ...activeAutoDomainNames]))
   const updates = [
