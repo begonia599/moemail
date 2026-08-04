@@ -15,6 +15,21 @@
     "backToEmailList": "← 返回邮箱列表",
     "backToMessageList": "← 返回消息列表"
   },
+  "expiry": {
+    "label": "有效期",
+    "oneHour": "1 小时",
+    "oneDay": "1 天",
+    "threeDays": "3 天",
+    "permanent": "永久",
+    "custom": "自定义",
+    "customAmount": "自定义有效期数值",
+    "minutes": "分钟",
+    "hours": "小时",
+    "days": "天",
+    "invalidCustom": "请输入至少 1 分钟的整数",
+    "preview": "预计到期",
+    "permanentPreview": "永久有效"
+  },
   "list": {
     "emailCount": "{count}/{max} 个邮箱",
     "emailCountUnlimited": "{count}/∞ 个邮箱",
@@ -32,8 +47,17 @@
   },
   "create": {
     "title": "创建邮箱",
-    "name": "邮箱前缀",
-    "namePlaceholder": "留空则随机生成",
+    "name": "完整邮箱地址",
+    "namePlaceholder": "例如 name@mail.example.com",
+    "address": "完整邮箱地址",
+    "addressPlaceholder": "例如 name@mail.example.com",
+    "addressRequired": "请输入完整邮箱地址",
+    "invalidFormat": "邮箱地址必须且只能包含一个 @",
+    "invalidLocalPart": "邮箱前缀格式无效，不能包含空白、连续点、首尾点或非法字符",
+    "localPartTooLong": "邮箱前缀不能超过 64 个字符",
+    "addressTooLong": "完整邮箱地址不能超过 254 个字符",
+    "unknownDomain": "邮箱域名必须是已配置根域名或其合法子域名",
+    "autoSubdomainHint": "若子域名 {domain} 尚不存在，创建时将自动配置 DNS 记录",
     "domain": "域名",
     "domainPlaceholder": "选择域名",
     "expiryTime": "有效期",
@@ -47,6 +71,18 @@
     "failed": "创建邮箱失败",
     "randomAll": "随机生成",
     "preview": "预览"
+  },
+  "renew": {
+    "action": "续约",
+    "title": "续约邮箱",
+    "currentExpiry": "当前到期时间",
+    "cancel": "取消",
+    "confirm": "确认续约",
+    "renewing": "续约中...",
+    "success": "邮箱续约成功",
+    "failed": "邮箱续约失败",
+    "expired": "邮箱已过期，无法续约",
+    "permanent": "永久邮箱无需续约"
   },
   "messages": {
     "received": "收件箱",
