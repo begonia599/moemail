@@ -141,11 +141,12 @@ export const {
       clientId: process.env.AUTH_GITHUB_ID,
       clientSecret: process.env.AUTH_GITHUB_SECRET,
       allowDangerousEmailAccountLinking: true,
-      // GitHub returns an RFC 9207 `iss` parameter on the callback. @auth/core
-      // falls back to a placeholder issuer ("https://authjs.dev") for non-OIDC
-      // providers, so oauth4webapi rejects the response with
+      // GitHub returns an RFC 9207 `iss` parameter on the callback, and its
+      // value is "https://github.com/login/oauth" (not the bare origin).
+      // @auth/core falls back to a placeholder issuer ("https://authjs.dev")
+      // for non-OIDC providers, so oauth4webapi rejects the response with
       // 'unexpected "iss" (issuer) response parameter value'. Pin the real one.
-      issuer: "https://github.com",
+      issuer: "https://github.com/login/oauth",
     }),
     Google({
       clientId: process.env.AUTH_GOOGLE_ID,
