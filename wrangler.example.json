@@ -4,6 +4,10 @@
   "compatibility_date": "2024-03-20",
   "compatibility_flags": ["nodejs_compat"],
   "pages_build_output_dir": ".vercel/output/static",
+  "vars": {
+    "AUTH_TRUST_HOST": "true",
+    "AUTH_URL": "https://mail.cxnode.top"
+  },
   "d1_databases": [
     {
       "binding": "DB",
