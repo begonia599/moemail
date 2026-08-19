@@ -96,42 +96,6 @@ export const {
   signOut
 } = NextAuth(() => ({
   secret: process.env.AUTH_SECRET,
-  // TEMP DIAGNOSTIC - captures the real error Auth.js masks as "Configuration".
-  // Remove once the sign-in failure is identified.
-  logger: {
-    error(...args: unknown[]) {
-      try {
-        const serialized = args
-          .map((a) => {
-            if (a instanceof Error) {
-              const e = a as Error & { type?: string; cause?: unknown }
-              const cause = e.cause as { err?: Error; provider?: string } | undefined
-              return JSON.stringify({
-                name: e.name,
-                type: e.type,
-                message: e.message,
-                provider: cause?.provider,
-                causeMessage: cause?.err?.message ?? (e.cause ? String(e.cause) : undefined),
-                causeStack: cause?.err?.stack?.slice(0, 1200),
-                stack: e.stack?.slice(0, 1200),
-              })
-            }
-            return typeof a === "string" ? a : JSON.stringify(a)
-          })
-          .join(" || ")
-          .slice(0, 6000)
-
-        const { env, ctx } = getRequestContext()
-        ctx.waitUntil(
-          env.DB.prepare("INSERT INTO debug_log (ts, kind, msg) VALUES (?1, ?2, ?3)")
-            .bind(Date.now(), "auth-error", serialized)
-            .run()
-        )
-      } catch {
-        // diagnostics must never break auth
-      }
-    },
-  },
   adapter: DrizzleAdapter(createDb(), {
     usersTable: users,
     accountsTable: accounts,
